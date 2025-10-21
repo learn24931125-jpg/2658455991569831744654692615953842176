@@ -236,7 +236,237 @@
     </div>
 
     <script>
-        // 簡單的 JavaScript 互動佔位符
+        // // ====================================================================
+// A. 模擬數據庫 (Mock Data)
+// 實際應用中，這些數據應從後端 API 獲取
+// ====================================================================
+
+const mockAttractionsData = {
+    japan: [
+        { id: 'tokyo-skytree', name: '東京晴空塔', keywords: '現代、摩天大樓、夜景', coords: '35.7100, 139.8100', mapLink: 'https://maps.google.com/?q=35.7100,139.8100' },
+        { id: 'fuji', name: '富士山', keywords: '自然、雪山、神社', coords: '35.3608, 138.7274', mapLink: 'https://maps.google.com/?q=35.3608,138.7274' },
+        { id: 'kyoto-temple', name: '清水寺', keywords: '歷史、木造結構、紅葉', coords: '34.9949, 135.7850', mapLink: 'https://maps.google.com/?q=34.9949,135.7850' },
+    ],
+    france: [
+        { id: 'eiffel', name: '艾菲爾鐵塔', keywords: '浪漫、巴黎、鋼鐵建築', coords: '48.8584, 2.2945', mapLink: 'https://maps.google.com/?q=48.8584,2.2945' },
+        { id: 'louvre', name: '羅浮宮', keywords: '藝術、金字塔、蒙娜麗莎', coords: '48.8606, 2.3376', mapLink: 'https://maps.google.com/?q=48.8606,2.3376' },
+    ],
+    // ... 其他國家數據
+};
+
+// 儲存當前選定的景點，用於語音播放
+let currentSelectedAttraction = null;
+let currentPlayingAudio = null;
+
+// ====================================================================
+// B. API Key 驗證功能
+// ====================================================================
+
+async function testAPI() {
+    const key = document.getElementById('ai-key').value.trim();
+    const resultDiv = document.getElementById('api-settings').querySelector('h2');
+
+    if (key.length < 10) {
+        resultDiv.innerHTML = `<h2>API 設置與測試 (錯誤：金鑰太短)</h2>`;
+        alert('請輸入有效的 API Key。');
+        return;
+    }
+
+    resultDiv.innerHTML = `<h2>API 設置與測試 <span style="color: yellow;">(驗證中...)</span></h2>`;
+
+    // 模擬 Gemini API 驗證過程 (實際應在後端發起請求，檢查狀態碼)
+    // 這裡我們簡單模擬成功或失敗
+    await new Promise(resolve => setTimeout(resolve, 1500)); // 模擬網路延遲
+
+    if (key.startsWith('sk-AIGemini')) { // 假設正確金鑰以 sk-AIGemini 開頭
+        resultDiv.innerHTML = `<h2>API 設置與測試 <span style="color: #00ff00;">(驗證成功 ✅)</span></h2>`;
+        alert('Gemini API 連線成功！可以開始生成內容。');
+    } else {
+        resultDiv.innerHTML = `<h2>API 設置與測試 <span style="color: #ff0000;">(驗證失敗 ❌)</span></h2>`;
+        alert('API Key 無效，請檢查您的金鑰。');
+    }
+}
+
+// ====================================================================
+// C. 選擇國家並顯示景點列表
+// ====================================================================
+
+function loadAttractions() {
+    const country = document.getElementById('country-select').value;
+    const cardsContainer = document.getElementById('attraction-cards');
+    const mapPlaceholder = document.getElementById('map-placeholder');
+
+    cardsContainer.innerHTML = '';
+    mapPlaceholder.innerHTML = '地圖展示區<br>(請點擊景點卡片獲取坐標)';
+
+    if (country === 'none') {
+        cardsContainer.innerHTML = '<p style="margin: 20px; width: 100%;">請從選單中選擇一個國家開始瀏覽。</p>';
+        return;
+    }
+
+    const attractions = mockAttractionsData[country] || [];
+
+    if (attractions.length === 0) {
+        cardsContainer.innerHTML = `<p style="margin: 20px; width: 100%;">抱歉，目前沒有 ${country} 的景點資料。</p>`;
+        return;
+    }
+
+    attractions.forEach(attr => {
+        const cardHtml = `
+            <div class="attraction-card glass-container" onclick="showAttractionDetail('${attr.id}', '${country}')">
+                <div class="attraction-card-img" id="img-${attr.id}">
+                    AI 圖片載入中...
+                </div>
+                <h3>${attr.name}</h3>
+                <p id="desc-${attr.id}">點擊生成 AI 介紹與圖片...</p>
+                <button class="voice-play-btn" onclick="event.stopPropagation(); generateAndPlayVoice('${attr.id}', '${attr.name}')">
+                    ▶ 生成並播放語音導覽
+                </button>
+            </div>
+        `;
+        cardsContainer.innerHTML += cardHtml;
+    });
+
+    // 載入後，自動選第一個景點顯示詳細資訊
+    if (attractions.length > 0) {
+        showAttractionDetail(attractions[0].id, country);
+    }
+}
+
+// ====================================================================
+// D. 點選景點後顯示介紹與地圖座標
+// ====================================================================
+
+function showAttractionDetail(attractionId, country) {
+    const attraction = mockAttractionsData[country].find(a => a.id === attractionId);
+    if (!attraction) return;
+
+    currentSelectedAttraction = attraction; // 更新當前選定景點
+
+    // 1. 模擬 AI 介紹文字生成
+    const descElement = document.getElementById(`desc-${attractionId}`);
+    descElement.innerHTML = `<span style="color: #00bcd4;">AI 正在撰寫介紹...</span>`;
+
+    setTimeout(() => {
+        const aiIntro = `這是由 Gemini AI 根據關鍵詞「${attraction.keywords}」生成的【${attraction.name}】簡短介紹。它的坐標為：${attraction.coords}。這裡擁有迷人的景色和深厚的文化底蘊。`;
+        descElement.innerHTML = aiIntro;
+    }, 1000);
+
+    // 2. 更新地圖展示區
+    const mapPlaceholder = document.getElementById('map-placeholder');
+    const mapEmbedUrl = `https://www.google.com/maps/embed/v1/place?key=YOUR_MAPS_API_KEY&q=${attraction.coords}`;
+    
+    mapPlaceholder.innerHTML = `
+        <iframe
+            width="100%"
+            height="100%"
+            frameborder="0"
+            style="border:0; border-radius: 15px;"
+            src="${attraction.mapLink}&z=14"
+            allowfullscreen
+        ></iframe>
+    `;
+
+    // 3. 模擬圖片生成 (這裡直接觸發圖片生成，無需額外點擊)
+    generateImage(attractionId, attraction.name);
+}
+
+
+// ====================================================================
+// E. 點擊按鈕生成圖片與語音播放
+// ====================================================================
+
+function generateImage(attractionId, name) {
+    const imgDiv = document.getElementById(`img-${attractionId}`);
+    
+    // 模擬 DALL-E/Stable Diffusion 圖片生成過程
+    imgDiv.style.backgroundImage = `none`;
+    imgDiv.innerHTML = `<span style="color: yellow; animation: blink 1s infinite;">AI 圖像生成中...</span>`;
+
+    // 模擬圖像生成成功並替換背景
+    setTimeout(() => {
+        // 實際中會是 DALL-E 或 Stable Diffusion API 返回的圖片 URL
+        const imageUrl = `https://picsum.photos/seed/${attractionId}/280/180`;
+        imgDiv.style.backgroundImage = `url(${imageUrl})`;
+        imgDiv.style.backgroundSize = 'cover';
+        imgDiv.style.backgroundPosition = 'center';
+        imgDiv.innerHTML = ``; // 清除文字
+    }, 2500); // 模擬生成所需時間
+}
+
+function generateAndPlayVoice(attractionId, name) {
+    // 停止正在播放的音訊
+    if (currentPlayingAudio) {
+        currentPlayingAudio.pause();
+        currentPlayingAudio = null;
+    }
+
+    const button = document.querySelector(`#img-${attractionId}`).nextElementSibling.nextElementSibling.nextElementSibling;
+    button.textContent = '🔊 語音生成中...';
+    button.disabled = true;
+
+    // 1. 模擬 TTS 語音生成
+    // 實際應用中，會將景點介紹文字發給 TTS API (如 Google Text-to-Speech)
+    // TTS API 會返回一個音訊檔案 (mp3/ogg) 的 URL
+    
+    const mockAudioUrl = `https://actions.google.com/sounds/v1/alarms/bugle_tune.ogg`; // 佔位音訊
+
+    setTimeout(() => {
+        // 2. 播放音訊
+        const audio = new Audio(mockAudioUrl);
+        currentPlayingAudio = audio;
+        
+        audio.play().then(() => {
+            button.textContent = '⏸ 播放中... (點擊停止)';
+            button.disabled = false;
+        }).catch(error => {
+            console.error("Audio playback error:", error);
+            button.textContent = '❌ 播放失敗';
+            button.disabled = false;
+            alert('音訊播放失敗，請檢查瀏覽器設定或 API 服務。');
+        });
+
+        // 監聽播放結束
+        audio.onended = () => {
+            button.textContent = '▶ 生成並播放語音導覽';
+            currentPlayingAudio = null;
+        };
+
+    }, 2000); // 模擬語音生成所需時間
+    
+    // 點擊第二次時停止播放
+    if (currentPlayingAudio && currentPlayingAudio.src.includes(mockAudioUrl)) {
+        currentPlayingAudio.pause();
+        currentPlayingAudio = null;
+        button.textContent = '▶ 生成並播放語音導覽';
+        button.disabled = false;
+    }
+}
+
+// 確保頁面載入後自動執行
+document.addEventListener('DOMContentLoaded', () => {
+    // 替換掉舊的簡單 JS 函數
+    window.testAPI = testAPI;
+    window.loadAttractions = loadAttractions;
+    window.showAttractionDetail = showAttractionDetail;
+    window.generateAndPlayVoice = generateAndPlayVoice;
+
+    // 首次載入時清空卡片區
+    document.getElementById('attraction-cards').innerHTML = '<p style="margin: 20px; width: 100%;">請從選單中選擇一個國家開始瀏覽。</p>';
+});
+
+// ====================================================================
+// F. 新增 CSS 動畫 (可選，讓載入效果更酷炫)
+// ====================================================================
+
+// 將此 CSS 添加到您的 <style> 標籤內
+/*
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0.4; }
+    100% { opacity: 1; }
+}
+*/
         function testAPI() {
             const key = document.getElementById('ai-key').value;
             if (key.length > 10) {
