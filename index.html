@@ -1,1 +1,275 @@
 <H1>智慧旅遊導覽</H1>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 智慧旅遊導覽系統 - 夜光漫遊</title>
+    <style>
+        /* 基礎設置與夜間科技主題 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0a20 0%, #000000 100%); /* 深藍紫到純黑的夜間背景 */
+            color: #e0f7fa; /* 淺青色文字 */
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 玻璃擬態 (Glassmorphism) 樣式 */
+        .glass-container {
+            background: rgba(255, 255, 255, 0.08); /* 淺色透明背景 */
+            backdrop-filter: blur(10px); /* 關鍵的模糊效果 */
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px;
+            transition: all 0.3s ease;
+        }
+
+        /* 標題區 (Header) */
+        header {
+            width: 90%;
+            text-align: center;
+            padding: 30px 0;
+        }
+        header h1 {
+            font-size: 2.5em;
+            color: #00bcd4; /* 科技感藍色 */
+            text-shadow: 0 0 10px rgba(0, 188, 212, 0.8);
+            margin-bottom: 5px;
+        }
+        header p {
+            color: #80deea;
+        }
+
+        /* API設定區 */
+        #api-settings {
+            width: 90%;
+            max-width: 800px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        #api-settings input {
+            padding: 8px;
+            border: 1px solid #00bcd4;
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            border-radius: 5px;
+            width: 60%;
+            margin-top: 10px;
+        }
+        #api-settings button {
+            padding: 8px 15px;
+            margin-left: 10px;
+            background-color: #00bcd4;
+            color: #0f0a20;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* 國家選單區 */
+        #country-selection {
+            width: 90%;
+            max-width: 1200px;
+            margin-bottom: 20px;
+        }
+        #country-selection select {
+            padding: 10px;
+            width: 300px;
+            background: rgba(4, 4, 30, 0.8);
+            color: #e0f7fa;
+            border: 1px solid #00bcd4;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+        #country-selection label {
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        /* 景點卡片與地圖佈局 */
+        #main-content {
+            display: flex;
+            width: 90%;
+            max-width: 1200px;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* 景點卡片區 */
+        #attraction-cards {
+            flex: 2; /* 佔據較大空間 */
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            max-height: 600px; /* 限制高度，啟用滾動 */
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        /* 滾動條樣式 (美化) */
+        #attraction-cards::-webkit-scrollbar { width: 8px; }
+        #attraction-cards::-webkit-scrollbar-thumb { background: rgba(0, 188, 212, 0.5); border-radius: 4px; }
+        #attraction-cards::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); }
+
+        .attraction-card {
+            padding: 0;
+            overflow: hidden;
+            text-align: left;
+            border-radius: 15px;
+            cursor: pointer;
+        }
+        .attraction-card:hover {
+            box-shadow: 0 10px 40px 0 rgba(0, 188, 212, 0.5);
+            transform: translateY(-5px);
+        }
+        .attraction-card-img {
+            width: 100%;
+            height: 180px;
+            background-color: #044b5b; /* 佔位符背景 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-style: italic;
+            font-size: 0.9em;
+        }
+        .attraction-card h3 {
+            margin: 10px 15px 5px;
+            color: #80deea;
+        }
+        .attraction-card p {
+            margin: 0 15px 15px;
+            font-size: 0.9em;
+            color: #bbdefb;
+        }
+        .voice-play-btn {
+            background-color: #00bcd4;
+            color: #0f0a20;
+            border: none;
+            padding: 5px 10px;
+            margin: 0 15px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* 地圖展示區 */
+        #map-display {
+            flex: 1; /* 佔據較小空間 */
+            height: 600px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: center;
+            overflow: hidden;
+        }
+        #map-placeholder {
+            width: 100%;
+            height: 100%;
+            background-color: #001f3f; /* 深藍色地圖背景 */
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>AI 智慧旅遊導覽系統</h1>
+        <p>夜光漫遊：選擇你的國家，開始一場由 AI 創造的視覺與聽覺盛宴。</p>
+    </header>
+
+    <div id="api-settings" class="glass-container">
+        <h2>API 設置與測試 (後臺介面)</h2>
+        <label for="ai-key">LLM API Key:</label>
+        <input type="text" id="ai-key" placeholder="輸入您的 AI 服務密鑰 (DALL-E, GPT 等)">
+        <button onclick="testAPI()">連線測試</button>
+    </div>
+
+    <div id="country-selection" class="glass-container">
+        <label for="country-select">選擇旅遊國家：</label>
+        <select id="country-select" onchange="loadAttractions()">
+            <option value="none">-- 請選擇一個國家 --</option>
+            <option value="japan">日本 (Japan)</option>
+            <option value="france">法國 (France)</option>
+            <option value="taiwan">台灣 (Taiwan)</option>
+            <option value="usa">美國 (USA)</option>
+        </select>
+    </div>
+
+    <div id="main-content">
+        
+        <div id="attraction-cards">
+            <div class="attraction-card glass-container">
+                <div class="attraction-card-img">AI 生成圖片佔位符</div>
+                <h3>景點名稱佔位符</h3>
+                <p>AI 摘要：這是一個由 AI 根據歷史資料生成的簡短描述，點擊查看詳情...</p>
+                <button class="voice-play-btn">▶ 播放語音導覽</button>
+            </div>
+            <div class="attraction-card glass-container">
+                <div class="attraction-card-img">AI 生成圖片佔位符</div>
+                <h3>景點名稱佔位符 2</h3>
+                <p>AI 摘要：探索這個迷人的地方，聆聽我們的智慧導覽...</p>
+                <button class="voice-play-btn">▶ 播放語音導覽</button>
+            </div>
+            </div>
+
+        <div id="map-display" class="glass-container">
+            <div id="map-placeholder">
+                地圖展示區<br>
+                (此處將嵌入 Google Maps 或其他地圖 API)
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // 簡單的 JavaScript 互動佔位符
+        function testAPI() {
+            const key = document.getElementById('ai-key').value;
+            if (key.length > 10) {
+                alert('API Key 連線成功！可以開始生成內容。');
+            } else {
+                alert('請輸入有效的 API Key。');
+            }
+        }
+
+        function loadAttractions() {
+            const country = document.getElementById('country-select').value;
+            const cardsContainer = document.getElementById('attraction-cards');
+            
+            // 實際應用中，此處應發起 AJAX 請求到後端 API，根據 country 獲取景點數據
+            if (country !== 'none') {
+                cardsContainer.innerHTML = `<div class="attraction-card glass-container">
+                    <div class="attraction-card-img">AI 繪製 - ${country.toUpperCase()} 著名景點</div>
+                    <h3>${country} 景點 1</h3>
+                    <p>這是 AI 為 ${country} 生成的景點介紹摘要...</p>
+                    <button class="voice-play-btn">▶ 播放導覽</button>
+                </div>
+                <div class="attraction-card glass-container">
+                    <div class="attraction-card-img">AI 繪製 - ${country.toUpperCase()} 特色建築</div>
+                    <h3>${country} 景點 2</h3>
+                    <p>AI 正在規劃您的路線與語音腳本...</p>
+                    <button class="voice-play-btn">▶ 播放導覽</button>
+                </div>
+                <p style="margin: 20px; text-align: center; width: 100%;">已載入 ${country} 的景點。</p>`;
+            } else {
+                cardsContainer.innerHTML = '<p style="margin: 20px; width: 100%;">請從選單中選擇一個國家開始瀏覽。</p>';
+            }
+        }
+    </script>
+
+</body>
+</html>
