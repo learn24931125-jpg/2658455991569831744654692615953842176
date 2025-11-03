@@ -1,1 +1,183 @@
 <H1>智慧旅遊導覽</H1>
+/* 顏色變數設定 */
+:root {
+    --main-bg: #e0e5ec;        /* 主背景色 */
+    --main-shadow-light: #ffffff; /* 亮陰影 (左上) */
+    --main-shadow-dark: #a3b1c6;  /* 暗陰影 (右下) */
+    --primary-color: #4CAF50;    /* 主色 (綠色) */
+    --secondary-color: #2196F3;  /* 輔助色 (藍色) */
+    --text-color: #333;
+    --border-radius: 15px;
+}
+
+body {
+    font-family: '微軟正黑體', 'Arial', sans-serif;
+    background: var(--main-bg);
+    color: var(--text-color);
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+}
+
+.container {
+    width: 95%;
+    max-width: 1400px;
+}
+
+/* --- Neumorphism 樣式混入 --- */
+
+/* 凸出效果 (Raised) - 用於卡片 */
+.neumorphic-card {
+    background: var(--main-bg);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 8px 8px 15px var(--main-shadow-dark), 
+               -8px -8px 15px var(--main-shadow-light);
+    transition: all 0.3s ease;
+}
+
+/* 按鈕 (初始凸出) */
+.neumorphic-button, .neumorphic-button-small {
+    border: none;
+    outline: none;
+    background: var(--main-bg);
+    color: var(--text-color);
+    cursor: pointer;
+    border-radius: 10px;
+    padding: 10px 15px;
+    font-weight: bold;
+    box-shadow: 5px 5px 10px var(--main-shadow-dark), 
+               -5px -5px 10px var(--main-shadow-light);
+    transition: all 0.2s ease;
+}
+
+.neumorphic-button-small {
+    padding: 7px 10px;
+    font-size: 0.85em;
+    margin-right: 5px;
+}
+
+/* 按鈕按下的凹陷效果 */
+.neumorphic-button:active, .neumorphic-button-small:active,
+.neumorphic-button.active {
+    box-shadow: inset 4px 4px 8px var(--main-shadow-dark), 
+                inset -4px -4px 8px var(--main-shadow-light);
+    transform: scale(0.98);
+}
+
+/* 輸入框 (內凹效果) */
+.neumorphic-input {
+    border: none;
+    outline: none;
+    background: var(--main-bg);
+    padding: 10px 15px;
+    border-radius: 10px;
+    width: calc(100% - 30px);
+    box-shadow: inset 3px 3px 6px var(--main-shadow-dark), 
+                inset -3px -3px 6px var(--main-shadow-light);
+    transition: all 0.2s ease;
+}
+
+/* 地圖區塊 (大的內凹框架) */
+.neumorphic-map {
+    background: var(--main-bg);
+    border-radius: var(--border-radius);
+    height: 600px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #666;
+    font-size: 1.2em;
+    box-shadow: inset 8px 8px 15px var(--main-shadow-dark), 
+                inset -8px -8px 15px var(--main-shadow-light);
+}
+
+/* --- 景點卡片選擇狀態優化 --- */
+
+/* 起點按鈕被選中時的樣式 (深綠色凹陷) */
+.neumorphic-button-small.selected-start {
+    background: var(--primary-color);
+    color: white;
+    box-shadow: inset 4px 4px 8px #2e7d32, 
+                inset -4px -4px 8px #81c784;
+    font-weight: bold;
+}
+
+/* 目的地按鈕被選中時的樣式 (藍色凹陷) */
+.neumorphic-button-small.selected-end {
+    background: var(--secondary-color);
+    color: white;
+    box-shadow: inset 4px 4px 8px #0d47a1, 
+                inset -4px -4px 8px #64b5f6;
+    font-weight: bold;
+}
+
+/* --- 佈局與區塊樣式 --- */
+.header { text-align: center; margin-bottom: 30px; }
+.header h1 { font-size: 2.5em; font-weight: 300; margin-bottom: 5px; }
+
+.main-content {
+    display: flex;
+    gap: 30px;
+}
+
+.left-panel { flex: 2; min-width: 400px; }
+.right-panel { flex: 1; min-width: 300px; }
+
+/* API 設定區 */
+.api-settings { display: flex; flex-direction: column; gap: 15px; }
+.setting-group { display: flex; align-items: center; gap: 10px; }
+.setting-group label { font-weight: bold; min-width: 70px; }
+
+/* 景點選單區 */
+.attraction-menu .menu-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+
+/* 景點卡片區 */
+.attraction-cards {
+    display: grid;
+    /* 讓 card.style.display='block' 時能夠重新佈局 */
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+    gap: 20px;
+}
+
+.card {
+    cursor: default; /* 不再讓整個卡片可點擊 */
+    text-align: center;
+}
+
+.card:hover {
+    /* 懸停時維持凸出效果 */
+    box-shadow: 8px 8px 15px var(--main-shadow-dark), 
+               -8px -8px 15px var(--main-shadow-light);
+}
+
+.card-image-placeholder {
+    width: 100%;
+    height: 180px;
+    background: var(--main-bg);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #999;
+    font-size: 0.9em;
+    box-shadow: inset 3px 3px 6px var(--main-shadow-dark), 
+                inset -3px -3px 6px var(--main-shadow-light);
+}
+
+.card h3 { margin: 5px 0; }
+.card p { font-size: 0.9em; color: #666; margin-bottom: 15px; }
+.card-actions { margin-top: 10px; display: flex; justify-content: center; flex-wrap: wrap; gap: 5px; }
+
+
+/* RWD 調整 */
+@media (max-width: 900px) {
+    .main-content { flex-direction: column; }
+    .left-panel, .right-panel { flex: auto; min-width: auto; }
+    .attraction-cards { grid-template-columns: 1fr; }
+}
