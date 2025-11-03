@@ -1,1 +1,486 @@
 <H1>智慧旅遊導覽</H1>
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 智慧旅遊導覽系統 - 台灣</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --main-bg-color: #e0e0e0;
+            --light-shadow: #ffffff;
+            --dark-shadow: #a1a1a1;
+            --primary-color: #4CAF50; /* 亮綠色 */
+            --danger-color: #F44336; /* 紅色 */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--main-bg-color);
+            margin: 0;
+            padding: 20px;
+            display: grid;
+            gap: 20px;
+            grid-template-columns: 250px 1fr;
+            color: #333;
+        }
+
+        .neumorphic {
+            border-radius: 12px;
+            background: var(--main-bg-color);
+            box-shadow: 8px 8px 16px var(--dark-shadow),
+                        -8px -8px 16px var(--light-shadow);
+            padding: 15px;
+            transition: all 0.2s ease;
+        }
+
+        /* 標題與 API 區塊 */
+        .header-area, .api-settings {
+            grid-column: 1 / -1;
+            margin-bottom: 10px;
+        }
+        
+        .header-area { text-align: center; padding: 20px 0; }
+        .header-area h1 { margin: 0; font-size: 2em; letter-spacing: 2px; text-shadow: 1px 1px 2px var(--light-shadow); }
+
+        .api-settings {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+            padding: 15px 30px;
+        }
+
+        .api-settings input {
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: var(--main-bg-color);
+            box-shadow: inset 2px 2px 5px var(--dark-shadow),
+                        inset -5px -5px 10px var(--light-shadow);
+            width: 300px;
+            color: #333;
+            font-size: 1em;
+        }
+        
+        .api-settings button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 3px 3px 6px rgba(0,0,0,0.2),
+                        -3px -3px 6px rgba(255,255,255,0.7);
+        }
+        
+        .api-settings button:active {
+            box-shadow: inset 2px 2px 5px var(--dark-shadow),
+                        inset -5px -5px 10px var(--light-shadow);
+        }
+        
+        .api-status {
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--danger-color);
+        }
+        .connected { background-color: var(--primary-color); }
+
+
+        /* 景點選單樣式 (左側側邊欄) */
+        .menu-area h3 { margin-top: 0; padding: 10px 15px; color: #555; border-bottom: 2px solid var(--dark-shadow); }
+        .menu-area ul { list-style: none; padding: 0; margin: 0; }
+        .menu-area li { padding: 12px 15px; margin: 5px 0; cursor: pointer; color: #444; font-weight: 500; }
+        .menu-area li:hover { box-shadow: inset 2px 2px 5px var(--dark-shadow), inset -5px -5px 10px var(--light-shadow); border-radius: 8px; color: var(--primary-color); }
+        
+        /* 主要內容區 */
+        .main-content {
+            display: grid;
+            gap: 20px;
+            grid-template-rows: auto auto 1fr; 
+            padding: 0;
+        }
+        .main-content h2 { margin-bottom: 0;}
+
+        /* 景點卡片區樣式 */
+        .card-container {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            padding-top: 10px;
+        }
+
+        .spot-card {
+            min-width: 300px;
+            cursor: pointer;
+            padding: 0;
+            overflow: hidden;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .spot-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 10px 10px 20px var(--dark-shadow),
+                        -10px -10px 20px var(--light-shadow);
+        }
+
+        .card-image {
+            width: 100%;
+            height: 150px;
+            background-color: #ccc;
+            box-shadow: inset 2px 2px 5px var(--dark-shadow),
+                        inset -5px -5px 10px var(--light-shadow);
+        }
+        
+        .card-image i { font-size: 3em; line-height: 150px; color: #888; }
+        .card-image img { width: 100%; height: 100%; object-fit: cover; }
+
+        .card-content {
+            padding: 15px;
+            text-align: left;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card-content h4 { margin-top: 0; color: #333; }
+        .card-content p { font-size: 0.9em; color: #555; }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .action-buttons button {
+            flex-grow: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 8px;
+            background: var(--main-bg-color);
+            cursor: pointer;
+            color: #555;
+            font-weight: 600;
+            box-shadow: 3px 3px 6px var(--dark-shadow),
+                        -3px -3px 6px var(--light-shadow);
+        }
+
+        .action-buttons button:active {
+            box-shadow: inset 2px 2px 5px var(--dark-shadow),
+                        inset -5px -5px 10px var(--light-shadow);
+        }
+        
+        /* 地圖展示區樣式 */
+        .map-area { height: 500px; }
+        .map-placeholder {
+            width: 100%;
+            height: 100%;
+            background-color: #c9c9c9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            color: #666;
+            border-radius: 12px;
+            box-shadow: inset 8px 8px 16px var(--dark-shadow),
+                        inset -8px -8px 16px var(--light-shadow);
+        }
+
+        /* Modal 樣式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: var(--main-bg-color);
+            margin: 10% auto;
+            padding: 30px;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 15px;
+            box-shadow: 10px 10px 20px var(--dark-shadow),
+                        -10px -10px 20px var(--light-shadow);
+            position: relative;
+        }
+
+        .close-btn {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+        }
+
+        .close-btn:hover,
+        .close-btn:focus {
+            color: #333;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        #modal-image-area {
+            height: 250px;
+            margin-top: 15px;
+            border-radius: 10px;
+            background-color: #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-style: italic;
+            color: #666;
+            box-shadow: inset 5px 5px 10px var(--dark-shadow),
+                        inset -5px -5px 10px var(--light-shadow);
+        }
+        
+        #modal-image-area img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+        
+        /* 生成圖片按鈕 */
+        #generate-image-btn {
+            background-color: #2196F3; /* 藍色 */
+            color: white;
+            padding: 10px 15px;
+            margin-top: 15px;
+            display: block;
+            width: 100%;
+        }
+        
+    </style>
+</head>
+<body>
+
+    <div class="header-area">
+        <h1>🇹🇼 AI 智慧旅遊導覽系統</h1>
+    </div>
+
+    <div class="api-settings neumorphic">
+        <i class="fas fa-cogs"></i>
+        <input type="text" id="api-key-input" placeholder="輸入您的 Gemini API Key">
+        <button id="connect-api-btn"><i class="fas fa-key"></i> 連接 API</button>
+        <div class="api-status">
+            API 狀態: <span id="api-status-text">未連接</span> <span id="status-dot" class="status-dot"></span>
+        </div>
+    </div>
+
+    <div class="menu-area neumorphic">
+        <h3><i class="fas fa-mountain"></i> 旅遊主題</h3>
+        <ul>
+            <li><i class="fas fa-umbrella-beach"></i> 自然風光</li>
+            <li><i class="fas fa-archway"></i> 歷史古蹟</li>
+            <li><i class="fas fa-utensils"></i> 美食文化</li>
+            <li><i class="fas fa-city"></i> 城市探索</li>
+            <li><i class="fas fa-palette"></i> 藝術文創</li>
+        </ul>
+        <hr style="border-top: 1px solid var(--dark-shadow); border-bottom: 1px solid var(--light-shadow); margin: 15px 0;">
+        <h3><i class="fas fa-route"></i> 路線規劃</h3>
+        <ul>
+            <li><i class="fas fa-plus"></i> 新增路線</li>
+            <li><i class="fas fa-save"></i> 儲存路線</li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        
+        <h2><i class="fas fa-map-marker-alt"></i> 台灣推薦景點</h2>
+        <div class="card-container" id="card-container">
+            </div>
+
+        <h2><i class="fas fa-globe-asia"></i> 路線規劃與地圖</h2>
+        <div class="map-area neumorphic">
+            <div class="map-placeholder">
+                [地圖展示區 - 路線會在此處顯示]
+            </div>
+        </div>
+    </div>
+    
+    <div id="spotModal" class="modal">
+      <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h2 id="modal-title">景點名稱</h2>
+        <p><strong><i class="fas fa-compass"></i> 地圖座標：</strong> <span id="modal-coords">N/A</span></p>
+        <hr>
+        <p id="modal-intro">景點詳細介紹...</p>
+        
+        <h3>AI 生成景點圖片預覽</h3>
+        <div id="modal-image-area">點擊下方按鈕，使用 AI 生成此景點的專屬圖片</div>
+        
+        <button id="generate-image-btn" class="neumorphic">
+            <i class="fas fa-robot"></i> 生成景點圖片
+        </button>
+        
+        <p style="margin-top: 15px; font-size: 0.8em; color: #777;">* 圖片生成為模擬功能，需要有效的 API Key (本範例為模擬驗證)。</p>
+      </div>
+    </div>
+    
+    <script>
+        // --- 景點資料設定 ---
+        const TAIWAN_SPOTS = [
+            { id: 1, name: "台北 101 大樓", intro: "這座標誌性的摩天大樓曾經是世界第一高樓。它代表了台灣現代化的成就，提供壯觀的城市景觀，是跨年煙火的熱門地點。", coords: "25.033964, 121.564468", imagePrompt: "Taipei 101 skyscraper at sunset, photorealistic, cinematic lighting." },
+            { id: 2, name: "日月潭風景區", intro: "台灣最大的天然湖泊，以其優美的湖光山色、邵族文化和自行車道聞名。水社大山倒映湖面，景色宜人，推薦搭乘纜車欣賞全景。", coords: "23.899739, 120.914757", imagePrompt: "Sun Moon Lake, Taiwan, with traditional boats, morning mist, photo." },
+            { id: 3, name: "台南安平古堡", intro: "台灣最古老的城堡，由荷蘭人建造，見證了台灣數百年的歷史變遷。紅磚斑駁，充滿懷舊氣息，是熱蘭遮城遺跡。", coords: "22.995963, 120.165416", imagePrompt: "Anping Fort (Anping Old Fort) in Tainan, historic architecture, sunny day, illustration style." },
+            { id: 4, name: "阿里山國家森林遊樂區", intro: "以日出、雲海、晚霞、森林和高山鐵路「阿里山五奇」享譽國際。這裡的巨木群和櫻花季尤其吸引人。", coords: "23.510000, 120.816667", imagePrompt: "Alishan National Forest Recreation Area, mist, cypress trees, and railway, HDR photo." },
+            { id: 5, name: "高雄駁二藝術特區", intro: "由老舊的港口倉庫群改造而成的文創園區，充滿了塗鴉藝術、獨立書店與特色咖啡廳，是南台灣的藝術樞紐。", coords: "22.622437, 120.287233", imagePrompt: "Pier-2 Art Center in Kaohsiung, colorful warehouse, modern art installations." },
+        ];
+        
+        let GEMINI_API_KEY = '';
+        const cardContainer = document.getElementById('card-container');
+        const modal = document.getElementById('spotModal');
+
+        // --- 1. 動態景點卡片生成 ---
+        function renderCards() {
+            TAIWAN_SPOTS.forEach(spot => {
+                const card = document.createElement('div');
+                card.className = 'spot-card neumorphic';
+                
+                // 使用 data-* 屬性儲存景點 ID，方便後續查找
+                card.setAttribute('data-id', spot.id);
+                
+                card.innerHTML = `
+                    <div class="card-image"><i class="fas fa-image"></i></div>
+                    <div class="card-content">
+                        <div>
+                            <h4>${spot.name}</h4>
+                            <p>${spot.intro.substring(0, 30)}...</p>
+                        </div>
+                        <div class="action-buttons">
+                            <button onclick="handleRouteAction(${spot.id}, 'start'); event.stopPropagation();"><i class="fas fa-road"></i> 設為啟程地</button>
+                            <button onclick="handleRouteAction(${spot.id}, 'end'); event.stopPropagation();"><i class="fas fa-flag"></i> 設為目的地</button>
+                        </div>
+                        <button onclick="showSpotDetails(${spot.id}); event.stopPropagation();" 
+                            style="margin-top: 10px; background-color: #2196F3; color: white;">
+                            <i class="fas fa-search"></i> 看介紹/生成圖片
+                        </button>
+                    </div>
+                `;
+                cardContainer.appendChild(card);
+            });
+        }
+        
+        // --- 2. API Key 驗證功能 ---
+        document.getElementById('connect-api-btn').addEventListener('click', connectApi);
+
+        function connectApi() {
+            const input = document.getElementById('api-key-input');
+            const statusText = document.getElementById('api-status-text');
+            const statusDot = document.getElementById('status-dot');
+            
+            const key = input.value.trim();
+            
+            if (key.length >= 20) { // 模擬驗證：檢查長度
+                GEMINI_API_KEY = key;
+                statusText.textContent = '已連接';
+                statusDot.classList.add('connected');
+                input.disabled = true;
+                this.disabled = true;
+                alert('API Key 連接成功！現在可以嘗試生成圖片。');
+            } else {
+                GEMINI_API_KEY = '';
+                statusText.textContent = '失敗/無效';
+                statusDot.classList.remove('connected');
+                alert('API Key 無效或太短，請輸入一個有效的 Key (模擬驗證失敗)。');
+            }
+        }
+        
+        // --- 3. 點選景點後顯示介紹與地圖座標 ---
+        function showSpotDetails(id) {
+            const spot = TAIWAN_SPOTS.find(s => s.id === id);
+            if (!spot) return;
+
+            // 更新 Modal 內容
+            document.getElementById('modal-title').textContent = spot.name;
+            document.getElementById('modal-coords').textContent = spot.coords;
+            document.getElementById('modal-intro').textContent = spot.intro;
+            
+            // 清空圖片區
+            const imageArea = document.getElementById('modal-image-area');
+            imageArea.innerHTML = '點擊下方按鈕，使用 AI 生成此景點的專屬圖片';
+            imageArea.style.color = '#666';
+            
+            // 綁定圖片生成按鈕的事件
+            const generateBtn = document.getElementById('generate-image-btn');
+            generateBtn.onclick = () => generateSpotImage(id);
+            
+            modal.style.display = 'block';
+        }
+        
+        // Modal 關閉功能
+        document.querySelector('.close-btn').onclick = () => {
+            modal.style.display = 'none';
+        };
+        window.onclick = (event) => {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        };
+
+        // --- 4. 點擊按鈕生成圖片 (模擬) ---
+        function generateSpotImage(id) {
+            if (!GEMINI_API_KEY) {
+                alert('請先在上方輸入並連接您的 API Key！');
+                return;
+            }
+            
+            const spot = TAIWAN_SPOTS.find(s => s.id === id);
+            const imageArea = document.getElementById('modal-image-area');
+            const generateBtn = document.getElementById('generate-image-btn');
+            
+            // 模擬生成過程
+            imageArea.innerHTML = `<i class="fas fa-spinner fa-spin"></i> AI 正在根據提示生成圖片："${spot.imagePrompt}"...`;
+            imageArea.style.color = '#444';
+            generateBtn.disabled = true;
+
+            setTimeout(() => {
+                // 模擬圖片 URL (這裡使用一個台灣相關的 placeholder 圖片)
+                const imageUrl = "https://picsum.photos/600/250?random=" + spot.id; 
+                
+                imageArea.innerHTML = `<img src="${imageUrl}" alt="${spot.name} AI Generated Image">`;
+                imageArea.style.color = 'initial';
+                generateBtn.disabled = false;
+                alert(`景點圖片生成成功！`);
+            }, 3000); // 模擬 3 秒延遲
+        }
+        
+        // --- 路線規劃功能 (簡單模擬) ---
+        function handleRouteAction(id, type) {
+            const spot = TAIWAN_SPOTS.find(s => s.id === id);
+            const mapPlaceholder = document.querySelector('.map-placeholder');
+            
+            let actionText = type === 'start' ? '啟程地' : '目的地';
+            alert(`已將【${spot.name}】設定為您的${actionText}！\n\n[地圖 API 應在此處更新路線]`);
+            
+            mapPlaceholder.innerHTML = `<i class="fas fa-route"></i> 正在規劃從 [啟程地] 到 ${spot.name} (${actionText}) 的路線...`;
+        }
+
+        // 頁面載入完成後執行
+        document.addEventListener('DOMContentLoaded', renderCards);
+    </script>
+</body>
+</html>
