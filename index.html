@@ -28,7 +28,6 @@
             align-items: center;
         }
 
-        /* 標題區 */
         h1 {
             color: var(--primary-color);
             padding-bottom: 10px;
@@ -84,6 +83,9 @@
             top: 20px;
             height: fit-content;
             min-width: 300px;
+            /* 允許內容滾動 */
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
         }
 
         /* API 金鑰區塊 */
@@ -136,7 +138,46 @@
             border-radius: 10px;
             background: var(--bg-color);
             box-shadow: inset 3px 3px 6px var(--dark-shadow), inset -3px -3px 6px var(--light-shadow);
-            /* ... (圖片生成 loading 樣式不變) */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 14px;
+            text-align: center;
+            position: relative;
+        }
+
+        .card-image-placeholder img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 10px;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .card-image-placeholder .loading-bar {
+            width: 80%;
+            height: 8px;
+            background-color: #f3f3f3;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .card-image-placeholder .loading-bar-fill {
+            height: 100%;
+            width: 0;
+            background-color: var(--primary-color);
+            animation: loading 2s infinite linear;
+        }
+
+        @keyframes loading {
+            0% { width: 0%; }
+            50% { width: 80%; }
+            100% { width: 100%; }
         }
         
         /* 路線摘要區 (Route Summary) */
@@ -187,7 +228,33 @@
             color: white;
         }
         
-        /* ... 其他 CSS 保持不變 ... */
+        /* --- 行程規劃結果樣式 (NEW) --- */
+        #route-plan-result {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--dark-shadow);
+        }
+
+        .day-plan {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-left: 4px solid var(--primary-color);
+            background: #e9eff6; /* 略微深色的背景以區分 */
+            border-radius: 5px;
+        }
+        .day-plan h4 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+        .activity {
+            margin-bottom: 5px;
+            padding-left: 10px;
+            border-left: 2px solid #ccc;
+        }
+        .activity strong {
+            display: block;
+        }
+
 
         @media (max-width: 900px) {
             .container { flex-direction: column; }
@@ -227,9 +294,16 @@
                     <i class="fas fa-car"></i> AI 規劃完整路線
                 </button>
             </div>
-            <h2>景點詳細資訊</h2>
-            <p id="details-content">點擊左側景點卡片以查看介紹和設定路線起點/目的地。</p>
-            <p id="details-coords"></p>
+            <div id="route-plan-result">
+                <h2><i class="fas fa-clipboard-list"></i> AI 行程規劃結果</h2>
+                <p id="route-result-content">請設定起始地和目的地，並點擊上方按鈕開始規劃。</p>
+            </div>
+
+            <div id="poi-details">
+                <h2>景點詳細資訊</h2>
+                <p id="details-content">點擊左側景點卡片以查看介紹和設定路線起點/目的地。</p>
+                <p id="details-coords"></p>
+            </div>
         </div>
     </div>
 
@@ -248,6 +322,7 @@
         const validateButton = document.getElementById('validate-button');
         const validationStatus = document.getElementById('validation-status');
         const detailsPanel = document.getElementById('details-panel');
+        const routeResultContent = document.getElementById('route-result-content'); // NEW
         const detailsContent = document.getElementById('details-content');
         const detailsCoords = document.getElementById('details-coords');
         const planRouteButton = document.getElementById('plan-route-button');
@@ -255,7 +330,92 @@
         let isKeyValid = false;
 
         // ===============================================
-        // 路線儲存與顯示功能 (使用 LocalStorage) - NEW
+        // 路線規劃功能 (NEW)
+        // ===============================================
+
+        /**
+         * 模擬 AI 生成 3 天 2 夜行程
+         * @param {string} start - 起始地名稱
+         * @param {string} end - 目的地名稱
+         */
+        function mockAiRoutePlanning(start, end) {
+            // 禁用按鈕並顯示載入中
+            planRouteButton.disabled = true;
+            planRouteButton.innerHTML = `<i class="fas fa-spinner fa-spin"></i> AI 規劃中...`;
+            routeResultContent.innerHTML = `<p style="text-align: center;">正在為您規劃從【${start}】到【${end}】的 3 天 2 夜最佳行程，請稍候...</p>`;
+
+            // 模擬 API 延遲
+            setTimeout(() => {
+                planRouteButton.disabled = false;
+                planRouteButton.innerHTML = `<i class="fas fa-car"></i> AI 規劃完成！`;
+
+                const planData = [
+                    { 
+                        day: 1, 
+                        title: `【啟程日】從 ${start} 前往核心區域`, 
+                        activities: [
+                            '上午：從起始地出發，搭乘高鐵/火車前往最近的大城市。',
+                            '中午：抵達並享用當地特色美食（如：台鐵便當或小吃）。',
+                            '下午：參觀鄰近地標景點 (如：台北101或附近的老街)。',
+                            '晚上：入住飯店，並在夜市享用晚餐。'
+                        ] 
+                    },
+                    { 
+                        day: 2, 
+                        title: `【核心探索】深度遊覽 ${end} 及周邊`, 
+                        activities: [
+                            '上午：前往目的地景點【${end}】進行深度遊覽，享受自然或文化景觀。',
+                            '中午：在景區內或附近餐廳用餐。',
+                            '下午：探索周邊隱藏版景點或進行體驗活動 (如：採茶、DIY)。',
+                            '晚上：享受一頓豐盛的晚餐，體驗當地夜生活。'
+                        ] 
+                    },
+                    { 
+                        day: 3, 
+                        title: `【返程日】伴手禮與回程`, 
+                        activities: [
+                            '上午：參觀當地伴手禮店，購買紀念品。',
+                            '中午：享用旅程的最後一頓午餐。',
+                            '下午：前往車站/機場，搭乘交通工具返回起始地。',
+                            '備註：建議預留時間處理交通延誤。'
+                        ] 
+                    }
+                ];
+
+                displayRoutePlan(planData, start, end);
+            }, 3000); // 模擬 3 秒規劃時間
+        }
+
+        /**
+         * 顯示行程規劃結果到 UI
+         * @param {Array} planData - 包含每日行程的陣列
+         * @param {string} start - 起始地名稱
+         * @param {string} end - 目的地名稱
+         */
+        function displayRoutePlan(planData, start, end) {
+            let html = `
+                <h3>✅ AI 規劃完成！ (3 天 2 夜)</h3>
+                <p><strong>路線主題：</strong> 從 ${start} 到 ${end} 的精華之旅。</p>
+                <hr>
+            `;
+
+            planData.forEach(dayPlan => {
+                let activityList = dayPlan.activities.map(act => `<div class="activity">${act}</div>`).join('');
+                
+                html += `
+                    <div class="day-plan">
+                        <h4>第 ${dayPlan.day} 天: ${dayPlan.title}</h4>
+                        ${activityList}
+                    </div>
+                `;
+            });
+
+            routeResultContent.innerHTML = html;
+        }
+
+
+        // ===============================================
+        // 路線儲存與顯示功能 (使用 LocalStorage)
         // ===============================================
 
         /**
@@ -268,38 +428,38 @@
             document.getElementById('start-location-name').textContent = startName;
             document.getElementById('destination-name').textContent = destName;
             
-            // 根據是否設定起點和目的地來調整樣式
             document.getElementById('start-location-name').className = startName === '未設定' ? 'route-status-empty' : 'route-name';
             document.getElementById('destination-name').className = destName === '未設定' ? 'route-status-empty' : 'route-name';
 
-
             // 判斷是否可以啟用 AI 規劃按鈕
-            if (startName !== '未設定' && destName !== '未設定') {
+            if (startName !== '未設定' && destName !== '未設定' && isKeyValid) {
                 planRouteButton.disabled = false;
-                planRouteButton.textContent = `AI 規劃：從 ${startName} 到 ${destName}`;
+                planRouteButton.innerHTML = `<i class="fas fa-car"></i> AI 規劃：從 ${startName} 到 ${destName}`;
+                planRouteButton.style.backgroundColor = 'var(--primary-color)';
             } else {
                 planRouteButton.disabled = true;
-                planRouteButton.textContent = 'AI 規劃完整路線 (需設定起點與目的地)';
+                planRouteButton.innerHTML = isKeyValid ? 'AI 規劃完整路線 (需設定起點與目的地)' : '請先驗證 API Key';
+                planRouteButton.style.backgroundColor = 'var(--bg-color)';
             }
         }
 
         /**
          * 設置旅遊路線的起點或目的地
-         * @param {string} type - 'start' 或 'destination'
-         * @param {object} poi - 景點物件
          */
         function setRoutePoint(type, poi) {
             const keyName = type === 'start' ? 'startLocationName' : 'destinationName';
             const keyCoords = type === 'start' ? 'startLocationCoords' : 'destinationCoords';
             const alertMsg = type === 'start' ? '起始地' : '目的地';
 
-            // 儲存到瀏覽器的 LocalStorage
             localStorage.setItem(keyName, poi.name);
             localStorage.setItem(keyCoords, poi.coords);
             
             alert(`已將【${poi.name}】成功設為您的旅遊路線【${alertMsg}】！`);
             
-            renderRouteSummary(); // 立即更新摘要區
+            // 清空舊的規劃結果
+            routeResultContent.innerHTML = `<p>請設定起始地和目的地，並點擊上方按鈕開始規劃。</p>`;
+            
+            renderRouteSummary(); 
         }
 
         planRouteButton.addEventListener('click', () => {
@@ -307,9 +467,7 @@
             const destName = localStorage.getItem('destinationName');
             
             if (startName && destName) {
-                alert(`AI 正在規劃從【${startName}】到【${destName}】的最佳路線...\n(此為模擬功能，實際路線需要串接地圖/AI API)`);
-            } else {
-                alert('請先設定起始地和目的地！');
+                mockAiRoutePlanning(startName, destName);
             }
         });
 
@@ -334,6 +492,7 @@
                 validateButton.disabled = false;
                 document.querySelectorAll('.poi-card').forEach(card => card.classList.remove('enabled'));
             }
+            renderRouteSummary(); // 驗證後重新渲染摘要，以啟用/禁用規劃按鈕
         }
 
         validateButton.addEventListener('click', () => {
@@ -349,23 +508,21 @@
 
         /**
          * 處理卡片點擊事件 (顯示詳細資訊與動作按鈕)
-         * @param {object} poi - 景點物件
          */
         function handleCardClick(poi) {
-            // 2. 顯示介紹與地圖座標
             detailsContent.innerHTML = `
                 <h3>${poi.name}</h3>
                 <p>${poi.description}</p>
                 <div class="details-actions">
                     <button 
                         class="neumorphic-button action-button start" 
-                        onclick="setRoutePoint('start', ${JSON.stringify(poi).replace(/"/g, '&quot;')})"
+                        onclick="setRoutePoint('start', ${JSON.stringify(poi).replace(/"/g, "'")})"
                     >
                         <i class="fas fa-arrow-right"></i> 設為起始地
                     </button>
                     <button 
                         class="neumorphic-button action-button end" 
-                        onclick="setRoutePoint('destination', ${JSON.stringify(poi).replace(/"/g, '&quot;')})"
+                        onclick="setRoutePoint('destination', ${JSON.stringify(poi).replace(/"/g, "'")})"
                     >
                         <i class="fas fa-flag-checkered"></i> 設為目的地
                     </button>
@@ -390,10 +547,6 @@
         // 3. 模擬透過 AI 生成景點圖片
         // ===============================================
         
-        /**
-         * 模擬非同步的 AI 圖片生成過程
-         * @param {number} id - 景點 ID
-         */
         function mockAiImageGeneration(id) {
             const poi = pointsOfInterest.find(p => p.id === id);
             if (!poi || poi.imageStatus !== 'initial') return;
@@ -455,7 +608,6 @@
 
                 // 點擊事件：用於顯示詳細資訊
                 card.addEventListener('click', (event) => {
-                    // 避免點擊 action-button 觸發 card click
                     if (event.target.closest('.action-button')) return; 
                     
                     if (isKeyValid) {
