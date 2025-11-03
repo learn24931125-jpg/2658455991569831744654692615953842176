@@ -1,183 +1,353 @@
 <H1>智慧旅遊導覽</H1>
-/* 顏色變數設定 */
-:root {
-    --main-bg: #e0e5ec;        /* 主背景色 */
-    --main-shadow-light: #ffffff; /* 亮陰影 (左上) */
-    --main-shadow-dark: #a3b1c6;  /* 暗陰影 (右下) */
-    --primary-color: #4CAF50;    /* 主色 (綠色) */
-    --secondary-color: #2196F3;  /* 輔助色 (藍色) */
-    --text-color: #333;
-    --border-radius: 15px;
-}
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 智慧旅遊導覽系統 - 台灣</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <script defer
+        src="https://maps.googleapis.com/maps/api/js?key=YOUR_MAP_API_KEY&callback=initMap">
+    </script>
+</head>
+<body>
 
-body {
-    font-family: '微軟正黑體', 'Arial', sans-serif;
-    background: var(--main-bg);
-    color: var(--text-color);
-    margin: 0;
-    padding: 20px;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    min-height: 100vh;
-}
+    <div class="container">
 
-.container {
-    width: 95%;
-    max-width: 1400px;
-}
+        <header class="header">
+            <h1>🇹🇼 AI 智慧旅遊導覽系統</h1>
+            <p>路線規劃、景點介紹與圖片生成</p>
+        </header>
 
-/* --- Neumorphism 樣式混入 --- */
+        <section class="api-settings neumorphic-card">
+            <h3>⚙️ API & 設定</h3>
+            <div class="setting-group">
+                <label for="ai-api-key">AI Key:</label>
+                <input type="text" id="ai-api-key" placeholder="輸入 AI 服務金鑰 (ex: Gemini)">
+            </div>
+            <button class="neumorphic-button">儲存設定</button>
+        </section>
 
-/* 凸出效果 (Raised) - 用於卡片 */
-.neumorphic-card {
-    background: var(--main-bg);
-    border-radius: var(--border-radius);
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 8px 8px 15px var(--main-shadow-dark), 
-               -8px -8px 15px var(--main-shadow-light);
-    transition: all 0.3s ease;
-}
+        <main class="main-content">
+            
+            <div class="left-panel">
+                
+                <nav class="attraction-menu neumorphic-card">
+                    <h3>📂 景點分類</h3>
+                    <div class="menu-buttons">
+                        <button class="neumorphic-button active" data-filter="all">全部</button>
+                        <button class="neumorphic-button" data-filter="北部">北部</button>
+                        <button class="neumorphic-button" data-filter="中部">中部</button>
+                        <button class="neumorphic-button" data-filter="南部">南部</button>
+                        <button class="neumorphic-button" data-filter="東部">東部</button>
+                    </div>
+                    <div class="search-box">
+                        <input type="text" id="attraction-search" placeholder="🔍 搜尋景點..." class="neumorphic-input">
+                    </div>
+                </nav>
 
-/* 按鈕 (初始凸出) */
-.neumorphic-button, .neumorphic-button-small {
-    border: none;
-    outline: none;
-    background: var(--main-bg);
-    color: var(--text-color);
-    cursor: pointer;
-    border-radius: 10px;
-    padding: 10px 15px;
-    font-weight: bold;
-    box-shadow: 5px 5px 10px var(--main-shadow-dark), 
-               -5px -5px 10px var(--main-shadow-light);
-    transition: all 0.2s ease;
-}
+                <section class="attraction-cards">
+                    <h2>✨ 推薦景點 (點選按鈕設定起訖點)</h2>
+                    
+                    <div class="card neumorphic-card" data-region="北部" data-name="台北 101">
+                        <div class="card-image-placeholder">
+                            
+                        </div>
+                        <h3>台北 101</h3>
+                        <p>🏙️ 台灣地標，世界級觀光景點。</p>
+                        <div class="card-actions">
+                            <button class="neumorphic-button-small" data-type="start">設為啟程地</button>
+                            <button class="neumorphic-button-small" data-type="end">設為目的地</button>
+                            <button class="neumorphic-button-small" data-type="details">看詳情/生成圖片</button>
+                        </div>
+                    </div>
 
-.neumorphic-button-small {
-    padding: 7px 10px;
-    font-size: 0.85em;
-    margin-right: 5px;
-}
+                    <div class="card neumorphic-card" data-region="中部" data-name="日月潭">
+                        <div class="card-image-placeholder">
+                            
+                        </div>
+                        <h3>日月潭</h3>
+                        <p>🏞️ 台灣最美的高山湖泊。</p>
+                        <div class="card-actions">
+                            <button class="neumorphic-button-small" data-type="start">設為啟程地</button>
+                            <button class="neumorphic-button-small" data-type="end">設為目的地</button>
+                            <button class="neumorphic-button-small" data-type="details">看詳情/生成圖片</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card neumorphic-card" data-region="南部" data-name="阿里山">
+                        <div class="card-image-placeholder">
+                            
+                        </div>
+                        <h3>阿里山</h3>
+                        <p>🌲 壯麗的日出、雲海與鐵路。</p>
+                        <div class="card-actions">
+                            <button class="neumorphic-button-small" data-type="start">設為啟程地</button>
+                            <button class="neumorphic-button-small" data-type="end">設為目的地</button>
+                            <button class="neumorphic-button-small" data-type="details">看詳情/生成圖片</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card neumorphic-card" data-region="東部" data-name="太魯閣">
+                        <div class="card-image-placeholder">
+                            
+                        </div>
+                        <h3>太魯閣</h3>
+                        <p>🏞️ 鬼斧神工的大理石峽谷。</p>
+                        <div class="card-actions">
+                            <button class="neumorphic-button-small" data-type="start">設為啟程地</button>
+                            <button class="neumorphic-button-small" data-type="end">設為目的地</button>
+                            <button class="neumorphic-button-small" data-type="details">看詳情/生成圖片</button>
+                        </div>
+                    </div>
+                    
 
-/* 按鈕按下的凹陷效果 */
-.neumorphic-button:active, .neumorphic-button-small:active,
-.neumorphic-button.active {
-    box-shadow: inset 4px 4px 8px var(--main-shadow-dark), 
-                inset -4px -4px 8px var(--main-shadow-light);
-    transform: scale(0.98);
-}
+                </section>
 
-/* 輸入框 (內凹效果) */
-.neumorphic-input {
-    border: none;
-    outline: none;
-    background: var(--main-bg);
-    padding: 10px 15px;
-    border-radius: 10px;
-    width: calc(100% - 30px);
-    box-shadow: inset 3px 3px 6px var(--main-shadow-dark), 
-                inset -3px -3px 6px var(--main-shadow-light);
-    transition: all 0.2s ease;
-}
+            </div>
 
-/* 地圖區塊 (大的內凹框架) */
-.neumorphic-map {
-    background: var(--main-bg);
-    border-radius: var(--border-radius);
-    height: 600px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: #666;
-    font-size: 1.2em;
-    box-shadow: inset 8px 8px 15px var(--main-shadow-dark), 
-                inset -8px -8px 15px var(--main-shadow-light);
-}
+            <div class="right-panel">
+                <h2>🗺️ 路線與地圖展示</h2>
+                <div id="map-container" class="neumorphic-map">
+                    <p>地圖將在此顯示規劃路線</p>
+                </div>
+                
+                <div class="route-summary neumorphic-card">
+                    <h3>🚗 規劃結果</h3>
+                    <p><strong>起點:</strong> <span id="start-point">未設定</span></p>
+                    <p><strong>終點:</strong> <span id="end-point">未設定</span></p>
+                    <button class="neumorphic-button calculate-route">開始規劃路線</button>
+                </div>
+            </div>
 
-/* --- 景點卡片選擇狀態優化 --- */
+        </main>
 
-/* 起點按鈕被選中時的樣式 (深綠色凹陷) */
-.neumorphic-button-small.selected-start {
-    background: var(--primary-color);
-    color: white;
-    box-shadow: inset 4px 4px 8px #2e7d32, 
-                inset -4px -4px 8px #81c784;
-    font-weight: bold;
-}
+    </div>
 
-/* 目的地按鈕被選中時的樣式 (藍色凹陷) */
-.neumorphic-button-small.selected-end {
-    background: var(--secondary-color);
-    color: white;
-    box-shadow: inset 4px 4px 8px #0d47a1, 
-                inset -4px -4px 8px #64b5f6;
-    font-weight: bold;
-}
+    <script>
+        // --- 全域狀態與地圖物件 ---
+        let routeState = {
+            start: { name: "未設定", element: null },
+            end: { name: "未設定", element: null }
+        };
+        let directionsService;
+        let directionsRenderer;
+        let currentRegionFilter = 'all'; // 篩選狀態
 
-/* --- 佈局與區塊樣式 --- */
-.header { text-align: center; margin-bottom: 30px; }
-.header h1 { font-size: 2.5em; font-weight: 300; margin-bottom: 5px; }
+        // --- 1. Google Maps 初始化函式 ---
+        function initMap() {
+            const taiwanCenter = { lat: 23.7, lng: 120.9 }; 
+            
+            window.myMap = new google.maps.Map(document.getElementById("map-container"), {
+                zoom: 8, center: taiwanCenter, mapId: "YOUR_MAP_ID", 
+                disableDefaultUI: true, gestureHandling: "cooperative"
+            });
+            
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer();
+            directionsRenderer.setMap(window.myMap); 
+            
+            directionsRenderer.setDirections({ routes: [] });
+            document.getElementById('start-point').textContent = routeState.start.name;
+            document.getElementById('end-point').textContent = routeState.end.name;
 
-.main-content {
-    display: flex;
-    gap: 30px;
-}
+            console.log("Google 地圖與路線服務載入完成！");
+        }
 
-.left-panel { flex: 2; min-width: 400px; }
-.right-panel { flex: 1; min-width: 300px; }
+        // --- 2. AI 服務核心函式 (模擬) ---
 
-/* API 設定區 */
-.api-settings { display: flex; flex-direction: column; gap: 15px; }
-.setting-group { display: flex; align-items: center; gap: 10px; }
-.setting-group label { font-weight: bold; min-width: 70px; }
+        async function fetchAttractionDetails(attractionName) {
+            const apiKey = document.getElementById('ai-api-key').value;
+            if (!apiKey) {
+                return "錯誤：請先輸入 AI 服務金鑰！";
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 1500)); 
+            
+            return `【${attractionName} 深度介紹】由 AI 生成：${attractionName} 是台灣非常著名的景點。它不僅具有獨特的歷史意義，也結合了現代化的設計與自然景觀。這裡是遊客體驗台灣文化和美麗景色的必去之地。AI 建議最佳參訪時間為週末的下午。`;
+        }
 
-/* 景點選單區 */
-.attraction-menu .menu-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+        async function generateImage(prompt) {
+            const apiKey = document.getElementById('ai-api-key').value;
+            if (!apiKey) {
+                return "錯誤：請先輸入 AI 服務金鑰！";
+            }
 
-/* 景點卡片區 */
-.attraction-cards {
-    display: grid;
-    /* 讓 card.style.display='block' 時能夠重新佈局 */
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
-    gap: 20px;
-}
+            await new Promise(resolve => setTimeout(resolve, 2000)); 
 
-.card {
-    cursor: default; /* 不再讓整個卡片可點擊 */
-    text-align: center;
-}
+            const defaultImageMap = {
+                "台北 101": "https://fakeimg.pl/400x180/ADD8E6/000?text=AI+Generated+Taipei+101",
+                "日月潭": "https://fakeimg.pl/400x180/90EE90/000?text=AI+Generated+Sun+Moon+Lake",
+                "阿里山": "https://fakeimg.pl/400x180/F5DEB3/000?text=AI+Generated+Alishan",
+                "太魯閣": "https://fakeimg.pl/400x180/6A5ACD/FFF?text=AI+Generated+Taroko"
+            };
+            
+            const imageName = prompt.split(' ')[0]; 
+            return defaultImageMap[imageName] || "https://fakeimg.pl/400x180/F08080/000?text=AI+Image+Error";
+        }
+        
+        // --- 3. 路線規劃函式 ---
+        function calculateRoute() {
+            if (routeState.start.name === "未設定" || routeState.end.name === "未設定") {
+                alert("請先設定啟程地與目的地！");
+                return;
+            }
+            if (routeState.start.name === routeState.end.name) {
+                alert("起程地與目的地不能相同，請重新選擇！");
+                return;
+            }
+            
+            const request = {
+                origin: routeState.start.name,
+                destination: routeState.end.name,
+                travelMode: google.maps.TravelMode.DRIVING, 
+                unitSystem: google.maps.UnitSystem.METRIC,
+            };
 
-.card:hover {
-    /* 懸停時維持凸出效果 */
-    box-shadow: 8px 8px 15px var(--main-shadow-dark), 
-               -8px -8px 15px var(--main-shadow-light);
-}
+            directionsService.route(request, (response, status) => {
+                if (status === google.maps.DirectionsStatus.OK) {
+                    directionsRenderer.setDirections(response);
+                    
+                    const route = response.routes[0];
+                    const distance = route.legs[0].distance.text;
+                    const duration = route.legs[0].duration.text;
+                    
+                    alert(`✅ 路線規劃完成！\n總距離：${distance}\n預計時間：${duration}`);
+                } else {
+                    alert(`路線規劃失敗: ${status}. 請檢查景點名稱是否正確。`);
+                    directionsRenderer.setDirections({ routes: [] });
+                    console.error('Directions request failed due to ' + status);
+                }
+            });
+        }
+        
+        // --- 4. 景點篩選與搜尋核心函式 ---
+        function filterAttractions(regionFilter, searchQuery) {
+            const cards = document.querySelectorAll('.attraction-cards .card');
+            const normalizedQuery = searchQuery.toLowerCase().trim();
 
-.card-image-placeholder {
-    width: 100%;
-    height: 180px;
-    background: var(--main-bg);
-    border-radius: 10px;
-    margin-bottom: 10px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: #999;
-    font-size: 0.9em;
-    box-shadow: inset 3px 3px 6px var(--main-shadow-dark), 
-                inset -3px -3px 6px var(--main-shadow-light);
-}
+            cards.forEach(card => {
+                const region = card.getAttribute('data-region');
+                const name = card.getAttribute('data-name').toLowerCase();
+                let shouldShow = true;
 
-.card h3 { margin: 5px 0; }
-.card p { font-size: 0.9em; color: #666; margin-bottom: 15px; }
-.card-actions { margin-top: 10px; display: flex; justify-content: center; flex-wrap: wrap; gap: 5px; }
+                if (regionFilter !== 'all' && region !== regionFilter) {
+                    shouldShow = false;
+                }
 
+                if (normalizedQuery && !name.includes(normalizedQuery)) {
+                    shouldShow = false;
+                }
 
-/* RWD 調整 */
-@media (max-width: 900px) {
-    .main-content { flex-direction: column; }
-    .left-panel, .right-panel { flex: auto; min-width: auto; }
-    .attraction-cards { grid-template-columns: 1fr; }
-}
+                card.style.display = shouldShow ? 'block' : 'none';
+            });
+        }
+        
+        // --- 5. 事件監聽器綁定 (DOMContentLoaded) ---
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // 1. 分類按鈕點擊事件
+            document.querySelector('.attraction-menu .menu-buttons').addEventListener('click', function(event) {
+                const target = event.target;
+                if (target.classList.contains('neumorphic-button') && target.hasAttribute('data-filter')) {
+                    
+                    document.querySelectorAll('.menu-buttons .neumorphic-button').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    
+                    target.classList.add('active');
+
+                    currentRegionFilter = target.getAttribute('data-filter');
+                    
+                    const searchQuery = document.getElementById('attraction-search').value;
+                    filterAttractions(currentRegionFilter, searchQuery);
+                }
+            });
+
+            // 2. 搜尋輸入框事件 (即時搜尋)
+            document.getElementById('attraction-search').addEventListener('input', function(event) {
+                const searchQuery = event.target.value;
+                filterAttractions(currentRegionFilter, searchQuery);
+            });
+
+            // 3. 路線規劃按鈕事件
+            document.querySelector('.calculate-route').addEventListener('click', calculateRoute);
+
+        });
+        
+        // 4. 景點互動邏輯 (主要點擊事件)
+        document.addEventListener('click', async function(event) {
+            const target = event.target;
+            
+            if (target.classList.contains('neumorphic-button-small')) {
+                const card = target.closest('.card');
+                const attractionName = card.querySelector('h3').textContent;
+                const type = target.getAttribute('data-type'); 
+                
+                if (type === 'details') {
+                    // AI 詳情與圖片生成邏輯
+                    const cardParagraph = card.querySelector('p');
+                    const cardImagePlaceholder = card.querySelector('.card-image-placeholder');
+                    
+                    cardParagraph.textContent = "🔍 AI 正在生成景點介紹中，請稍候...";
+                    const details = await fetchAttractionDetails(attractionName);
+                    cardParagraph.textContent = details;
+                    
+                    cardImagePlaceholder.innerHTML = "🖼️ AI 正在生成圖片中...";
+                    const imagePrompt = `${attractionName}，台灣，夢幻寫實風格`;
+                    const imageUrl = await generateImage(imagePrompt);
+                    
+                    if (imageUrl.startsWith('錯誤')) {
+                         cardImagePlaceholder.innerHTML = imageUrl;
+                    } else {
+                        cardImagePlaceholder.innerHTML = '';
+                        const imgElement = document.createElement('img');
+                        imgElement.src = imageUrl;
+                        imgElement.alt = attractionName;
+                        imgElement.style.width = '100%';
+                        imgElement.style.height = '100%';
+                        imgElement.style.borderRadius = 'inherit';
+                        imgElement.style.objectFit = 'cover';
+                        cardImagePlaceholder.appendChild(imgElement);
+                    }
+                    
+                } else if (type === 'start' || type === 'end') {
+                    // 路線設定邏輯
+                    const key = type; 
+                    
+                    if (routeState[key].name === attractionName) {
+                        // 取消設定
+                        routeState[key].name = "未設定";
+                        if (routeState[key].element) {
+                            routeState[key].element.classList.remove('selected-start', 'selected-end');
+                        }
+                        routeState[key].element = null;
+                        document.getElementById(`${key}-point`).textContent = routeState[key].name;
+                        alert(`已取消 ${attractionName} 作為${key === 'start' ? '啟程地' : '目的地'}。`);
+                        return;
+                    }
+
+                    const oppositeKey = (key === 'start') ? 'end' : 'start';
+                    if (routeState[oppositeKey].name === attractionName) {
+                        alert(`【${attractionName}】已經設定為${oppositeKey === 'start' ? '啟程地' : '目的地'}，無法同時設定！`);
+                        return;
+                    }
+
+                    if (routeState[key].element) {
+                        routeState[key].element.classList.remove('selected-start', 'selected-end');
+                    }
+                    
+                    routeState[key].name = attractionName;
+                    routeState[key].element = target;
+
+                    target.classList.add(`selected-${key}`);
+                    document.getElementById(`${key}-point`).textContent = attractionName;
+                    
+                    alert(`✅ 已設定 ${attractionName} 為${key === 'start' ? '啟程地' : '目的地'}。`);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
