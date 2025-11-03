@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 智慧旅遊導覽系統 - 台灣 (行程規劃 2.0)</title>
+    <title>AI 智慧旅遊導覽系統 - 台灣 (行程規劃 2.0 - 已修復)</title>
     <style>
         /* Neumorphism 柔和亞克力風格變數 */
         :root {
@@ -82,6 +82,19 @@
         /* 卡片按鈕樣式 (維持不變) */
         .action-btn.origin { color: white; background-color: var(--accent-color); }
         .action-btn.destination { color: white; background-color: var(--warning-color); }
+        
+        /* 圖片佔位符 */
+        .card-image-placeholder {
+            width: 100%; height: 180px; background-color: #d1d9e6;
+            box-shadow: inset 1px 1px 3px var(--dark-shadow), inset -1px -1px 3px var(--light-shadow);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            font-size: 0.9em; color: #666; padding: 10px; box-sizing: border-box;
+            background-size: cover;
+            background-position: center;
+            text-shadow: 1px 1px 2px white;
+        }
+        /* 確保有圖片時文字隱藏 */
+        .card-image-placeholder[style*="background-image"] > span { display: none; }
     </style>
 </head>
 <body>
@@ -190,7 +203,7 @@
 
         let currentCategory = '全部';
 
-        // --- API Key 驗證 (維持不變) ---
+        // --- 1. API Key 驗證 (維持不變) ---
         function checkApiKey() {
             const apiKeyInput = document.getElementById('apiKey').value.trim();
             const statusLight = document.getElementById('api-status-light');
@@ -209,7 +222,7 @@
             }
         }
         
-        // --- 顯示景點詳情 (維持不變) ---
+        // --- 2. 顯示景點詳情 (維持不變) ---
         function showSpotDetails(spotId) {
             const spot = SPOTS_DATA.find(s => s.id === spotId);
             if (!spot) return;
@@ -226,16 +239,44 @@
             infoDisplay.scrollIntoView({ behavior: 'smooth' });
         }
         
-        // --- 模擬圖片生成 (維持不變) ---
+        // --- 3. 修復後的圖片生成功能 ---
         function simulateImageGeneration(event, spotId) {
             event.stopPropagation();
             const card = document.querySelector(`.spot-card[data-id="${spotId}"]`);
             if (!card) return;
-            // ... (模擬圖片生成邏輯)
-            alert('AI 圖片生成請求已發送 (模擬)。');
+
+            const imagePlaceholder = card.querySelector('.card-image-placeholder');
+            const spot = SPOTS_DATA.find(s => s.id === spotId);
+
+            // 步驟 1: 顯示規劃中狀態
+            imagePlaceholder.innerHTML = '<span style="color:white; text-shadow: 1px 1px 2px #333;">AI 正在生成圖片中...</span>';
+            imagePlaceholder.style.backgroundColor = '#a3b1c6';
+            imagePlaceholder.style.backgroundImage = 'none'; // 移除任何舊圖片
+
+            setTimeout(() => {
+                // 模擬圖片 URL，確保每次不同
+                const randomImage = `https://picsum.photos/400/200?random=${spotId + Math.random()}`; 
+                
+                // 步驟 2: 更新背景圖片
+                imagePlaceholder.style.backgroundImage = `url('${randomImage}')`;
+                imagePlaceholder.style.backgroundColor = 'transparent';
+                imagePlaceholder.style.color = 'transparent'; 
+                
+                // 步驟 3: 清空內部 HTML 內容，並顯示完成提示
+                imagePlaceholder.innerHTML = '<span style="background-color: rgba(0,0,0,0.6); color: white; padding: 5px 10px; border-radius: 5px;">🖼️ 圖片生成完成！</span>';
+                
+                // 將圖片網址存入資料中
+                spot.image = randomImage; 
+                
+                alert(`AI 為景點「${spot.name}」生成了新的圖片！(模擬成功)`);
+                
+                // 重新渲染卡片以確保新的背景圖片和狀態被正確載入
+                renderSpotCards();
+
+            }, 2500); // 模擬 2.5 秒的規劃時間
         }
 
-        // --- 點擊卡片設定啟程地或目的地 (維持不變) ---
+        // --- 4. 點擊卡片設定啟程地或目的地 (維持不變) ---
         function setWaypoint(event, spotId, type) {
             event.stopPropagation();
             const spot = SPOTS_DATA.find(s => s.id === spotId);
@@ -253,7 +294,7 @@
             alert(`已將景點「${spot.name}」設為您的${type === 'origin' ? '啟程地' : '目的地'}，並同步至輸入框。`);
         }
         
-        // --- 景點分類篩選功能 (維持不變) ---
+        // --- 5. 景點分類篩選功能 (維持不變) ---
         function filterSpots(category) {
             currentCategory = category;
             document.querySelectorAll('.category-btn').forEach(btn => {
@@ -263,7 +304,7 @@
             renderSpotCards();
         }
 
-        // --- 6. AI 自動規劃路線功能 (核心升級) ---
+        // --- 6. AI 自動規劃路線功能 (維持不變) ---
         function startRoutePlanning() {
             const origin = document.getElementById('input-origin').value.trim();
             const destination = document.getElementById('input-destination').value.trim();
@@ -342,7 +383,7 @@
                 let activities = [];
 
                 if (day === 1) {
-                    activities.push(`從 **${origin}** 啟程，前往第一個主要城市。`);
+                    activities.push(`從 **${origin}** 啟程，前往最近的歷史景點（如安平古堡）。`);
                     activities.push(`中餐：推薦在 ${spot1.location} 享用當地特色。`);
                     activities.push(`下午：參觀 ${spot1.name} (${spot1.category})。`);
                     if (style !== 'leisure') activities.push(`晚餐/夜間：轉往 ${spot2.location} 附近的夜市。`);
@@ -398,10 +439,12 @@
                 card.onclick = () => showSpotDetails(spot.id);
 
                 const imageStyle = spot.image ? `background-image: url('${spot.image}'); color: transparent;` : '';
-                const imageContent = spot.image ? '' : `
+                const imageContent = spot.image ? 
+                    '<span style="background-color: rgba(0,0,0,0.6); color: white; padding: 5px 10px; border-radius: 5px;">🖼️ 圖片生成完成！</span>' : 
+                    `
                     AI 生成景點圖片
                     <button class="action-btn nav-button" style="background-color: var(--info-color); color: white;" onclick="simulateImageGeneration(event, ${spot.id})">生成圖片</button>
-                `;
+                    `;
 
                 card.innerHTML = `
                     <div class="card-image-placeholder" style="${imageStyle}">
