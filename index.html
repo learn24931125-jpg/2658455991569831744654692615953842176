@@ -4,252 +4,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 智慧旅遊導覽系統 - 台灣</title>
+    <title>AI 智慧旅遊導覽系統 - 台灣 (增強版)</title>
     <style>
         /* Neumorphism 柔和亞克力風格變數 */
         :root {
-            --main-bg-color: #e0e5ec; /* 主背景色 */
-            --light-shadow: #ffffff;  /* 亮部陰影 */
-            --dark-shadow: #a3b1c6;   /* 暗部陰影 */
-            --text-color: #333;       /* 文字顏色 */
-            --accent-color: #4CAF50;  /* 強調色（綠色） */
-            --warning-color: #f44336; /* 警示色（紅） */
-            --info-color: #2196F3;    /* 資訊色（藍） */
+            --main-bg-color: #e0e5ec;
+            --light-shadow: #ffffff;
+            --dark-shadow: #a3b1c6;
+            --text-color: #333;
+            --accent-color: #4CAF50;  /* 綠色 */
+            --warning-color: #f44336; /* 紅色 */
+            --info-color: #2196F3;    /* 藍色 */
             --border-radius: 12px;
             --padding-size: 20px;
         }
 
-        /* 重置與通用樣式 */
+        /* 樣式簡化，保留核心 Neumorphism 效果 */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--main-bg-color);
             color: var(--text-color);
             margin: 0;
             padding: 0;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
         }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: var(--padding-size);
-            width: 100%;
+        .container { max-width: 1400px; margin: 0 auto; padding: var(--padding-size); width: 100%; }
+        .neumorphic-inset { /* 內凹 */
+            border-radius: var(--border-radius); background: var(--main-bg-color);
+            box-shadow: inset 6px 6px 12px var(--dark-shadow), inset -6px -6px 12px var(--light-shadow);
+            padding: var(--padding-size); margin-bottom: var(--padding-size);
         }
-
-        /* Neumorphism 基礎樣式 (內凹) */
-        .neumorphic-inset {
-            border-radius: var(--border-radius);
-            background: var(--main-bg-color);
-            box-shadow: inset 6px 6px 12px var(--dark-shadow),
-                        inset -6px -6px 12px var(--light-shadow);
-            padding: var(--padding-size);
-            margin-bottom: var(--padding-size);
+        .neumorphic-outset { /* 外凸 */
+            border-radius: var(--border-radius); background: var(--main-bg-color);
+            box-shadow: 6px 6px 12px var(--dark-shadow), -6px -6px 12px var(--light-shadow);
+            padding: var(--padding-size); margin-bottom: var(--padding-size);
         }
-
-        /* Neumorphism 基礎樣式 (外凸) */
-        .neumorphic-outset {
-            border-radius: var(--border-radius);
-            background: var(--main-bg-color);
-            box-shadow: 6px 6px 12px var(--dark-shadow),
-                        -6px -6px 12px var(--light-shadow);
-            padding: var(--padding-size);
-            margin-bottom: var(--padding-size);
-        }
-
-        /* --- 1. 標題區 --- */
-        header {
-            text-align: center;
-            padding: 40px 0;
-            background: var(--main-bg-color);
-            box-shadow: 0 4px 8px var(--dark-shadow),
-                        0 -4px 8px var(--light-shadow);
-            margin-bottom: var(--padding-size);
-        }
-
-        header h1 {
-            font-size: 2.5em;
-            color: var(--text-color);
-            text-shadow: 1px 1px 2px var(--light-shadow);
-            margin: 0;
-        }
-
-        /* --- 2. API 設定區 --- */
-        .api-settings {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .api-settings input[type="text"] {
-            flex-grow: 1;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 8px;
-            background: var(--main-bg-color);
-            box-shadow: inset 2px 2px 5px var(--dark-shadow),
-                        inset -2px -2px 5px var(--light-shadow);
-        }
+        header { text-align: center; padding: 40px 0; box-shadow: 0 4px 8px var(--dark-shadow), 0 -4px 8px var(--light-shadow); margin-bottom: var(--padding-size); }
+        .main-content { display: flex; gap: var(--padding-size); }
+        .sidebar { width: 30%; min-width: 300px; display: flex; flex-direction: column; gap: var(--padding-size); }
+        .main-panel { width: 70%; display: flex; flex-direction: column; gap: var(--padding-size); }
         
-        /* 狀態指示燈 */
-        .status-light {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 5px;
-            box-shadow: 1px 1px 2px var(--dark-shadow), -1px -1px 2px var(--light-shadow);
-        }
-        .status-light.valid { background-color: var(--accent-color); }
-        .status-light.invalid { background-color: var(--warning-color); }
-
-        /* --- 主內容區佈局 --- */
-        .main-content {
-            display: flex;
-            gap: var(--padding-size);
-        }
-
-        .sidebar {
-            width: 30%;
-            min-width: 300px;
-            display: flex;
-            flex-direction: column;
-            gap: var(--padding-size);
-        }
-
-        .main-panel {
-            width: 70%;
-            display: flex;
-            flex-direction: column;
-            gap: var(--padding-size);
-        }
-
-        /* --- 3. 景點選單 & 按鈕 --- */
+        /* 按鈕基礎樣式 */
         .nav-button {
-            border: none;
-            padding: 10px 15px;
-            border-radius: var(--border-radius);
-            background: var(--main-bg-color);
-            cursor: pointer;
-            font-weight: bold;
-            color: var(--text-color);
-            box-shadow: 3px 3px 6px var(--dark-shadow),
-                        -3px -3px 6px var(--light-shadow);
+            border: none; padding: 10px 15px; border-radius: var(--border-radius); background: var(--main-bg-color);
+            cursor: pointer; font-weight: bold; color: var(--text-color);
+            box-shadow: 3px 3px 6px var(--dark-shadow), -3px -3px 6px var(--light-shadow);
             transition: all 0.2s ease;
         }
-
-        .nav-button:hover {
-            transform: scale(1.02);
-        }
-
-        .nav-button:active, .nav-button.active {
-            box-shadow: inset 3px 3px 6px var(--dark-shadow),
-                        inset -3px -3px 6px var(--light-shadow);
+        .nav-button:hover { transform: scale(1.02); }
+        .nav-button.active, .nav-button:active {
+            box-shadow: inset 3px 3px 6px var(--dark-shadow), inset -3px -3px 6px var(--light-shadow);
             color: var(--accent-color);
         }
         
-        .trip-status p { margin: 5px 0; }
-        .trip-status strong { color: var(--info-color); }
-
-        /* --- 4. 景點卡片區 --- */
-        .card-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: var(--padding-size);
-        }
-
+        /* 卡片網格與樣式 */
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--padding-size); }
         .spot-card {
-            border-radius: var(--border-radius);
-            background: var(--main-bg-color);
-            box-shadow: 6px 6px 12px var(--dark-shadow),
-                        -6px -6px 12px var(--light-shadow);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            overflow: hidden;
-            position: relative;
+            border-radius: var(--border-radius); background: var(--main-bg-color);
+            box-shadow: 6px 6px 12px var(--dark-shadow), -6px -6px 12px var(--light-shadow);
+            cursor: pointer; transition: all 0.3s ease; overflow: hidden; position: relative;
         }
-
-        .spot-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 8px 8px 16px var(--dark-shadow),
-                        -8px -8px 16px var(--light-shadow);
-        }
-
-        .card-image-placeholder {
-            width: 100%;
-            height: 180px;
-            background-color: #d1d9e6;
-            box-shadow: inset 1px 1px 3px var(--dark-shadow),
-                        inset -1px -1px 3px var(--light-shadow);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            font-size: 0.9em;
-            color: #666;
-            padding: 10px;
-            box-sizing: border-box;
-            background-size: cover;
-            background-position: center;
-            text-shadow: 1px 1px 2px white;
-        }
-        
-        .card-image-placeholder > button {
-            margin-top: 5px;
-            background-color: var(--info-color);
-            color: white;
-        }
-
-        .card-content {
-            padding: 15px;
-        }
-
-        .card-actions {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
-        }
-
+        .spot-card:hover { transform: translateY(-3px); box-shadow: 8px 8px 16px var(--dark-shadow), -8px -8px 16px var(--light-shadow); }
+        .card-content { padding: 15px; }
+        .card-actions { display: flex; justify-content: space-between; margin-top: 10px; }
         .action-btn {
-            padding: 8px 12px;
-            font-size: 0.9em;
-            border: none;
-            border-radius: 8px;
-            background: var(--main-bg-color);
-            box-shadow: 2px 2px 4px var(--dark-shadow),
-                        -2px -2px 4px var(--light-shadow);
-            cursor: pointer;
-            transition: all 0.2s ease;
+            padding: 8px 12px; font-size: 0.9em; border: none; border-radius: 8px; background: var(--main-bg-color);
+            box-shadow: 2px 2px 4px var(--dark-shadow), -2px -2px 4px var(--light-shadow);
+            cursor: pointer; transition: all 0.2s ease;
         }
-
         .action-btn.origin { color: white; background-color: var(--accent-color); }
         .action-btn.destination { color: white; background-color: var(--warning-color); }
+        .action-btn:active { box-shadow: inset 2px 2px 4px var(--dark-shadow), inset -2px -2px 4px var(--light-shadow); }
         
-        .action-btn:active {
-            box-shadow: inset 2px 2px 4px var(--dark-shadow),
-                        inset -2px -2px 4px var(--light-shadow);
+        /* 圖片佔位符 */
+        .card-image-placeholder {
+            width: 100%; height: 180px; background-color: #d1d9e6;
+            box-shadow: inset 1px 1px 3px var(--dark-shadow), inset -1px -1px 3px var(--light-shadow);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            font-size: 0.9em; color: #666; padding: 10px; box-sizing: border-box;
+            background-size: cover; background-position: center; text-shadow: 1px 1px 2px white;
         }
-
-        /* --- 5. 地圖展示區 & 景點資訊 --- */
+        
+        /* 分類按鈕列表 */
+        .menu-list {
+            display: flex; flex-wrap: wrap; gap: 10px; padding: 0; list-style: none;
+            justify-content: flex-start; /* 靠左排列 */
+        }
+        .menu-list li { margin-bottom: 5px; }
+        
+        /* 地圖顯示 */
         #map-display {
-            width: 100%;
-            height: 400px;
-            background-color: #a3b1c6;
-            box-shadow: inset 8px 8px 16px var(--dark-shadow),
-                        inset -8px -8px 16px var(--light-shadow);
-            border-radius: var(--border-radius);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: var(--light-shadow);
-            font-size: 1.2em;
-            margin-top: 20px;
-        }
-        
-        #spot-info-display {
-            border-top: 1px solid var(--dark-shadow);
-            padding-top: 15px;
+            width: 100%; height: 400px; background-color: #a3b1c6;
+            box-shadow: inset 8px 8px 16px var(--dark-shadow), inset -8px -8px 16px var(--light-shadow);
+            border-radius: var(--border-radius); display: flex; justify-content: center; align-items: center;
+            color: var(--light-shadow); font-size: 1.2em; margin-top: 20px;
         }
     </style>
 </head>
@@ -268,7 +115,6 @@
             <select id="modelSelect" class="nav-button">
                 <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                 <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
-                <option value="openai-gpt-4o">GPT-4o</option>
             </select>
             <button class="nav-button" onclick="checkApiKey()">驗證 Key</button>
         </div>
@@ -277,9 +123,9 @@
             <div class="sidebar">
                 <div class="trip-status neumorphic-outset">
                     <h3>📍 您的旅程狀態</h3>
-                    <p>啟程地: <span id="origin-display"><strong>未設定</strong></span></p>
-                    <p>目的地: <span id="destination-display"><strong>未設定</strong></span></p>
-                    <button class="nav-button" id="start-planning-btn" style="width: 100%; background-color: var(--warning-color); color: white; margin-top: 15px;">AI 自動規劃路線</button>
+                    <p>啟程地: <span id="origin-display" style="color:var(--accent-color)"><strong>未設定</strong></span></p>
+                    <p>目的地: <span id="destination-display" style="color:var(--warning-color)"><strong>未設定</strong></span></p>
+                    <button class="nav-button" id="start-planning-btn" style="width: 100%; background-color: var(--info-color); color: white; margin-top: 15px;">AI 自動規劃路線</button>
                 </div>
                 
                 <div class="spot-menu neumorphic-outset">
@@ -299,28 +145,48 @@
                 <h2>精選台灣景點</h2>
                 
                 <div class="neumorphic-inset" style="padding: 10px;">
-                    <ul style="list-style: none; padding: 0; display: flex; gap: 10px;">
-                        <li><button class="nav-button active" style="padding: 5px 10px;">全部</button></li>
-                        <li><button class="nav-button" style="padding: 5px 10px;">古蹟</button></li>
-                        <li><button class="nav-button" style="padding: 5px 10px;">自然</button></li>
-                        <li><button class="nav-button" style="padding: 5px 10px;">美食</button></li>
+                    <ul class="menu-list" id="category-menu">
+                        <li><button class="nav-button category-btn active" data-category="全部">全部景點</button></li>
+                        <li><button class="nav-button category-btn" data-category="古蹟">歷史古蹟</button></li>
+                        <li><button class="nav-button category-btn" data-category="自然">自然風光</button></li>
+                        <li><button class="nav-button category-btn" data-category="美食">夜市美食</button></li>
+                        <li><button class="nav-button category-btn" data-category="文創">文創園區</button></li>
+                        <li><button class="nav-button category-btn" data-category="其他">其他</button></li>
                     </ul>
                 </div>
                 
                 <div class="card-grid" id="spot-cards-container">
-                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // 模擬景點資料 (包含 ID、名稱、描述和地圖座標)
+        // 擴充的模擬景點資料 (包含 ID、名稱、描述和地圖座標)
         const SPOTS_DATA = [
+            // 歷史古蹟 (古蹟)
             { id: 1, name: "故宮博物院", description: "🏛️ 全球中華文化藝術寶藏。", location: "台北士林", category: "古蹟", coords: { lat: 25.1018, lng: 121.5489 }, image: null },
-            { id: 2, name: "台北 101", description: "🏙️ 台灣地標，跨年煙火的熱門景點。", location: "台北信義", category: "都會", coords: { lat: 25.0339, lng: 121.5654 }, image: null },
-            { id: 3, name: "日月潭", description: "🏞️ 台灣中部最美的高山湖泊。", location: "南投魚池", category: "自然", coords: { lat: 23.8967, lng: 120.9167 }, image: 'https://cdn.example.com/sunmoonlake.jpg' },
-            { id: 4, name: "安平古堡", description: "🏰 台灣歷史最悠久的城堡之一。", location: "台南安平", category: "古蹟", coords: { lat: 22.9972, lng: 120.1650 }, image: null },
-            { id: 5, name: "士林夜市", description: "🍜 台北最大、最知名的觀光夜市。", location: "台北士林", category: "美食", coords: { lat: 25.0886, lng: 121.5245 }, image: null },
+            { id: 2, name: "安平古堡", description: "🏰 台灣歷史最悠久的城堡之一，原名熱蘭遮城。", location: "台南安平", category: "古蹟", coords: { lat: 23.0011, lng: 120.1650 }, image: null },
+            { id: 3, name: "紅毛城", description: "🇬🇧 歷史悠久的西班牙、荷蘭、英國遺跡。", location: "新北淡水", category: "古蹟", coords: { lat: 25.1754, lng: 121.4329 }, image: null },
+            
+            // 自然風光 (自然)
+            { id: 4, name: "日月潭", description: "🏞️ 台灣中部最美的高山湖泊，景色宜人。", location: "南投魚池", category: "自然", coords: { lat: 23.8581, lng: 120.9185 }, image: null },
+            { id: 5, name: "太魯閣國家公園", description: "⛰️ 雄偉壯麗的峽谷景觀，世界級的自然奇觀。", location: "花蓮秀林", category: "自然", coords: { lat: 24.1822, lng: 121.6111 }, image: null },
+            { id: 6, name: "阿里山國家森林遊樂區", description: "🌲 日出、雲海、晚霞、森林及高山鐵路。", location: "嘉義阿里山", category: "自然", coords: { lat: 23.5103, lng: 120.8061 }, image: null },
+            
+            // 夜市美食 (美食)
+            { id: 7, name: "士林夜市", description: "🍜 台北最大、最知名的觀光夜市，美食雲集。", location: "台北士林", category: "美食", coords: { lat: 25.0886, lng: 121.5244 }, image: null },
+            { id: 8, name: "六合夜市", description: "🦞 高雄市最具代表性的夜市，以海鮮聞名。", location: "高雄新興", category: "美食", coords: { lat: 22.6330, lng: 120.3022 }, image: null },
+            { id: 9, name: "文化路夜市", description: "🍲 嘉義代表性的美食街，雞肉飯發源地。", location: "嘉義西區", category: "美食", coords: { lat: 23.4792, lng: 120.4497 }, image: null },
+            
+            // 文創園區 (文創)
+            { id: 10, name: "華山1914文創園區", description: "🎨 舊酒廠改建，充滿藝文氣息的展覽空間。", location: "台北中正", category: "文創", coords: { lat: 25.0444, lng: 121.5293 }, image: null },
+            { id: 11, name: "松山文創園區", description: "🏢 前身為菸廠，現在是設計展覽的熱門地點。", location: "台北信義", category: "文創", coords: { lat: 25.0436, lng: 121.5625 }, image: null },
+            { id: 12, name: "駁二藝術特區", description: "🎭 港口倉庫改建的藝文特區，充滿海洋風情。", location: "高雄鹽埕", category: "文創", coords: { lat: 22.6226, lng: 120.2878 }, image: null },
+            
+            // 其他
+            { id: 13, name: "台北 101 觀景台", description: "🏙️ 台灣地標，可俯瞰整個台北都會區。", location: "台北信義", category: "其他", coords: { lat: 25.0336, lng: 121.5647 }, image: 'https://picsum.photos/400/200?random=13' },
+            { id: 14, name: "國立海洋生物博物館", description: "🐠 台灣最大水族館，可夜宿的海洋世界。", location: "屏東車城", category: "其他", coords: { lat: 22.0461, lng: 120.6989 }, image: null },
         ];
 
         let currentTrip = {
@@ -328,13 +194,15 @@
             destination: null
         };
         
+        let currentCategory = '全部'; // 預設顯示全部
+
         // --- 1. 模擬 API Key 驗證功能 ---
         function checkApiKey() {
             const apiKeyInput = document.getElementById('apiKey').value.trim();
             const statusLight = document.getElementById('api-status-light');
             const statusText = document.getElementById('api-status-text');
 
-            if (apiKeyInput.length > 20 && apiKeyInput.startsWith('AIza')) { // 簡單的模擬檢查
+            if (apiKeyInput.length > 20 && apiKeyInput.startsWith('AIza')) { 
                 statusLight.classList.remove('invalid');
                 statusLight.classList.add('valid');
                 statusText.innerText = '已連線 (模擬)';
@@ -357,13 +225,10 @@
             
             // 更新景點資訊
             infoDisplay.innerHTML = `
-                <h4>${spot.name} (${spot.category})</h4>
-                <p>${spot.description}</p>
-                <p><strong>地點:</strong> ${spot.location}</p>
-                <p><strong>座標:</strong> Lat: ${spot.coords.lat.toFixed(4)}, Lng: ${spot.coords.lng.toFixed(4)}</p>
-                <p style="color: var(--warning-color); font-size: 0.9em;">
-                    👆 提示：點擊卡片動作按鈕可設定路線！
-                </p>
+                <h4>✨ ${spot.name} (${spot.category})</h4>
+                <p style="font-size:0.95em; color:var(--text-color);">${spot.description}</p>
+                <p style="margin: 5px 0;"><strong>📍 位置:</strong> ${spot.location}</p>
+                <p style="margin: 5px 0;"><strong>🌐 座標:</strong> Lat: ${spot.coords.lat.toFixed(4)}, Lng: ${spot.coords.lng.toFixed(4)}</p>
             `;
 
             // 模擬地圖座標顯示
@@ -381,37 +246,48 @@
         
         // --- 3. 點擊按鈕生成圖片 (模擬) ---
         function simulateImageGeneration(event, spotId) {
-            event.stopPropagation(); // 阻止事件冒泡到卡片點擊事件
+            event.stopPropagation();
             const card = document.querySelector(`.spot-card[data-id="${spotId}"]`);
             if (!card) return;
 
             const imagePlaceholder = card.querySelector('.card-image-placeholder');
             const spot = SPOTS_DATA.find(s => s.id === spotId);
 
-            imagePlaceholder.innerHTML = 'AI 正在生成圖片中...';
+            imagePlaceholder.innerHTML = '<span style="color:white;">AI 正在生成圖片中...</span>';
             imagePlaceholder.style.backgroundColor = '#a3b1c6';
 
             setTimeout(() => {
-                const randomImage = `https://picsum.photos/400/200?random=${spotId}`; // 使用範例圖片
+                const randomImage = `https://picsum.photos/400/200?random=${spotId + Math.random()}`; // 使用範例圖片
                 imagePlaceholder.style.backgroundImage = `url('${randomImage}')`;
                 imagePlaceholder.style.color = 'transparent';
                 imagePlaceholder.innerHTML = '';
                 
-                alert(`AI 為景點「${spot.name}」生成了新的圖片！(模擬)`);
-            }, 1500); // 模擬生成延遲
+                // 將圖片網址存入資料中，如果需要的話
+                spot.image = randomImage; 
+                
+                // 生成成功後，讓圖片可以點擊顯示詳情
+                const newButton = document.createElement('button');
+                newButton.className = 'action-btn';
+                newButton.style.marginTop = '5px';
+                newButton.style.backgroundColor = 'rgba(0,0,0,0.5)';
+                newButton.style.color = 'white';
+                newButton.innerText = '圖片生成完成!';
+                
+                imagePlaceholder.appendChild(newButton);
+            }, 1500); 
         }
 
         // --- 4. 點擊景點卡片後，設定啟程地或目的地 ---
         function setWaypoint(event, spotId, type) {
-            event.stopPropagation(); // 阻止事件冒泡到卡片點擊事件
+            event.stopPropagation();
             const spot = SPOTS_DATA.find(s => s.id === spotId);
             if (!spot) return;
             
             const displayId = type === 'origin' ? 'origin-display' : 'destination-display';
             
             // 清除所有卡片上的標記
-            document.querySelectorAll('.action-btn').forEach(btn => {
-                btn.classList.remove('origin', 'destination');
+            document.querySelectorAll(`.action-btn.${type}`).forEach(btn => {
+                btn.classList.remove(type);
             });
             
             // 更新當前行程狀態
@@ -427,35 +303,66 @@
 
             alert(`已將「${spot.name}」設為您的${type === 'origin' ? '啟程地' : '目的地'}。`);
         }
+        
+        // --- 5. 景點分類篩選功能 ---
+        function filterSpots(category) {
+            currentCategory = category;
+            
+            // 處理分類按鈕的 Active 狀態
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.category === category) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            renderSpotCards(); // 重新渲染卡片
+        }
 
-        // --- 景點卡片動態生成與初始化 ---
+
+        // --- 景點卡片動態生成與渲染 ---
         function renderSpotCards() {
             const container = document.getElementById('spot-cards-container');
-            container.innerHTML = ''; // 清空現有卡片
+            container.innerHTML = ''; 
 
-            SPOTS_DATA.forEach(spot => {
+            // 根據 currentCategory 篩選景點
+            const filteredSpots = currentCategory === '全部'
+                ? SPOTS_DATA
+                : SPOTS_DATA.filter(spot => spot.category === currentCategory);
+
+            if (filteredSpots.length === 0) {
+                container.innerHTML = `<p style="text-align:center; padding: 50px;" class="neumorphic-inset">此類別暫無景點資料。</p>`;
+                return;
+            }
+
+            filteredSpots.forEach(spot => {
                 const card = document.createElement('div');
                 card.className = 'spot-card';
                 card.dataset.id = spot.id;
                 card.onclick = () => showSpotDetails(spot.id);
 
-                // 判斷是否為預設圖片
+                // 圖片佔位符邏輯
                 const imageStyle = spot.image ? `background-image: url('${spot.image}'); color: transparent;` : '';
                 const imageContent = spot.image ? '' : `
                     AI 生成景點圖片
-                    <button class="action-btn" onclick="simulateImageGeneration(event, ${spot.id})">生成圖片</button>
+                    <button class="action-btn nav-button" style="background-color: var(--info-color); color: white;" onclick="simulateImageGeneration(event, ${spot.id})">生成圖片</button>
                 `;
+
+                // 檢查是否已設定為起點或終點，設定按鈕樣式
+                const isOrigin = currentTrip.origin && currentTrip.origin.id === spot.id ? 'origin' : '';
+                const isDestination = currentTrip.destination && currentTrip.destination.id === spot.id ? 'destination' : '';
 
                 card.innerHTML = `
                     <div class="card-image-placeholder" style="${imageStyle}">
                         ${imageContent}
                     </div>
                     <div class="card-content">
-                        <h3>${spot.name} <span style="font-size:0.6em; color:var(--text-color); margin-left:5px;">${spot.category}</span></h3>
-                        <p style="font-size: 0.9em;">${spot.description}</p>
+                        <h3>${spot.name}</h3>
+                        <p style="font-size: 0.9em; margin-bottom: 5px;">${spot.description}</p>
+                        <p style="font-size: 0.8em; color: #666;">地點: ${spot.location}</p>
                         <div class="card-actions">
-                            <button class="action-btn" onclick="setWaypoint(event, ${spot.id}, 'origin')">設為啟程地</button>
-                            <button class="action-btn" onclick="setWaypoint(event, ${spot.id}, 'destination')">設為目的地</button>
+                            <button class="action-btn ${isOrigin}" onclick="setWaypoint(event, ${spot.id}, 'origin')">設為啟程地</button>
+                            <button class="action-btn ${isDestination}" onclick="setWaypoint(event, ${spot.id}, 'destination')">設為目的地</button>
                         </div>
                     </div>
                 `;
@@ -467,15 +374,22 @@
         document.addEventListener('DOMContentLoaded', () => {
             renderSpotCards();
             
+            // 為分類按鈕添加事件監聽器
+            document.querySelectorAll('.category-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    filterSpots(this.dataset.category);
+                });
+            });
+
             // 為路線規劃按鈕添加事件 (模擬)
             document.getElementById('start-planning-btn').addEventListener('click', () => {
                 if (!currentTrip.origin || !currentTrip.destination) {
-                    alert('請先設定啟程地與目的地！');
+                    alert('請先設定啟程地與目的地才能規劃路線！');
                     return;
                 }
                 
-                alert(`AI 正在規劃從 ${currentTrip.origin.name} 到 ${currentTrip.destination.name} 的最佳路線...`);
-                // 這裡將會是呼叫 AI 規劃 API 的實際邏輯
+                alert(`AI 規劃請求發送中...\n從 ${currentTrip.origin.name} 到 ${currentTrip.destination.name} 的最佳路線將由 AI 演算法生成。`);
+                // 這裡將是呼叫 AI 規劃 API 的實際邏輯
             });
         });
 
