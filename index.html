@@ -4,463 +4,471 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI智慧旅遊導覽系統 - 台灣 (Gemini 整合版)</title>
+    <title>AI 旅遊景點規劃介面 - 互動功能</title>
     <style>
-        /* Neumorphism 柔和亞克力風格 基礎設定 */
-        :root {
-            --bg-color: #e0e5ec; /* 柔和背景色 */
-            --light-shadow: #ffffff; /* 亮面陰影 */
-            --dark-shadow: #a3b1c6; /* 暗面陰影 */
-            --primary-color: #4a86e8; /* 主題色 (藍色) */
-            --text-color: #333;
-            --container-padding: 20px;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
+        /* 基礎樣式 */
         body {
-            background: var(--bg-color);
-            color: var(--text-color);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
             padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
         }
 
-        /* Neumorphism 基礎元件樣式 */
-        .neumo-card {
-            background: var(--bg-color);
-            border-radius: 25px;
-            padding: var(--container-padding);
-            box-shadow: 8px 8px 16px var(--dark-shadow), 
-                        -8px -8px 16px var(--light-shadow);
-            margin-bottom: 20px;
-            width: 100%;
-            transition: all 0.3s ease;
-        }
-
-        .neumo-inset {
-            background: var(--bg-color);
-            border-radius: 15px;
-            box-shadow: inset 5px 5px 10px var(--dark-shadow), 
-                        inset -5px -5px 10px var(--light-shadow);
-            padding: 10px 15px;
-            margin-bottom: 15px;
-        }
-
-        .neumo-button {
-            background: var(--bg-color);
-            border: none;
-            border-radius: 15px;
-            padding: 10px 20px;
-            cursor: pointer;
-            font-weight: bold;
-            color: var(--text-color);
-            box-shadow: 4px 4px 8px var(--dark-shadow), 
-                        -4px -4px 8px var(--light-shadow);
-            transition: all 0.2s ease;
-        }
-
-        .neumo-button:hover {
-            box-shadow: 6px 6px 12px var(--dark-shadow), 
-                        -6px -6px 12px var(--light-shadow);
-        }
-
-        .neumo-button:active {
-            box-shadow: inset 4px 4px 8px var(--dark-shadow), 
-                        inset -4px -4px 8px var(--light-shadow);
-        }
-
-        .neumo-input {
-            width: 100%;
-            padding: 10px 15px;
-            border: none;
-            background: var(--bg-color);
-            border-radius: 10px;
-            color: var(--text-color);
-            box-shadow: inset 2px 2px 5px var(--dark-shadow), 
-                        inset -2px -2px 5px var(--light-shadow);
-        }
-
-        /* 佈局和主要區塊樣式 */
-        #header-area {
-            text-align: center;
-        }
-
-        #main-container {
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 30px;
-            width: 90%;
-            max-width: 1400px;
-            margin-top: 20px;
-        }
-
-        #sidebar {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        /* 景點選單 (Scrollable List) */
-        #menu-list {
-            list-style: none;
-            padding: 0;
-            max-height: 400px;
-            overflow-y: auto;
-            border-radius: 15px;
-        }
-
-        .tour-item {
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 15px;
-            background: var(--bg-color);
-            cursor: pointer;
-            box-shadow: 4px 4px 8px var(--dark-shadow), -4px -4px 8px var(--light-shadow);
-            transition: all 0.2s ease;
-            font-weight: 500;
-        }
-
-        .tour-item:hover {
-            box-shadow: 6px 6px 12px var(--dark-shadow), -6px -6px 12px var(--light-shadow);
-            transform: translateY(-2px);
-        }
-
-        .tour-item.active {
-            /* 點擊後的凹陷效果 */
-            box-shadow: inset 4px 4px 8px var(--dark-shadow), inset -4px -4px 8px var(--light-shadow);
-            color: var(--primary-color);
-            font-weight: bold;
-        }
-
-        /* 景點卡片區 */
-        #spot-card-area {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        #spot-card h3 {
-            border-bottom: 2px solid var(--dark-shadow);
+        h1 {
+            color: #007bff;
+            border-bottom: 2px solid #e0e0e0;
             padding-bottom: 10px;
-            margin-bottom: 10px;
-            color: var(--primary-color);
+            margin-bottom: 20px;
         }
 
-        #spot-image-container {
-            min-height: 300px;
-            background: var(--bg-color);
-            border-radius: 15px;
-            /* 內凹以顯示圖片或載入狀態 */
-            box-shadow: inset 5px 5px 10px var(--dark-shadow), inset -5px -5px 10px var(--light-shadow);
+        /* 介面佈局 */
+        .container {
             display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-top: 15px;
+            gap: 20px;
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        #poi-section {
+            flex: 3; /* 景點卡片區域佔 3 份空間 */
+        }
+
+        #details-panel {
+            flex: 1; /* 詳細資訊面板佔 1 份空間 */
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 20px;
+            height: fit-content;
+            min-width: 300px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        /* API 金鑰區塊 */
+        #api-key-section {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #e6f7ff;
+            border: 1px solid #b8daff;
+            border-radius: 8px;
+        }
+
+        #api-key-input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        #validate-button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #validate-button:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+
+        #validation-status {
+            align-self: center;
+            font-weight: bold;
+        }
+
+        /* 景點卡片 */
+        #poi-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .poi-card {
+            background-color: #fff;
+            border-radius: 8px;
             overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            opacity: 0.5; /* 預設為半透明，需通過驗證才啟用 */
+            pointer-events: none; /* 預設禁用點擊 */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .poi-card.enabled {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .poi-card.enabled:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-content {
+            padding: 15px;
+            flex-grow: 1;
+        }
+
+        .card-image-placeholder {
+            height: 180px;
+            background-color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 14px;
+            text-align: center;
+            border-bottom: 1px solid #ccc;
             position: relative;
         }
 
-        #spot-image-container img {
-            max-width: 100%;
-            max-height: 100%;
-            border-radius: 15px;
-            display: none; 
-            transition: opacity 0.5s ease;
-        }
-
-        .loading-text {
-            color: var(--dark-shadow);
-            font-style: italic;
-            padding: 15px;
-            text-align: center;
-            animation: pulse 1.5s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 0.5; }
-            50% { opacity: 1; }
-            100% { opacity: 0.5; }
-        }
-
-        /* 地圖展示區 (模擬) */
-        #map-area {
-            min-height: 300px;
+        .card-image-placeholder img {
             width: 100%;
-            background-color: #cad1db; 
-            border-radius: 15px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            color: #4a4a4a;
-            font-size: 1.2em;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
         }
 
-        #map-area p {
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.7);
-            border-radius: 8px;
+        .card-image-placeholder .loading-bar {
+            width: 80%;
+            height: 8px;
+            background-color: #f3f3f3;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .card-image-placeholder .loading-bar-fill {
+            height: 100%;
+            width: 0;
+            background-color: #28a745;
+            animation: loading 2s infinite linear;
+        }
+
+        @keyframes loading {
+            0% { width: 0%; }
+            50% { width: 80%; }
+            100% { width: 100%; }
+        }
+
+        .card-content h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+
+        .card-actions {
+            padding: 0 15px 15px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .action-button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 14px;
+        }
+
+        .action-button.generate {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .action-button.generate:hover {
+            background-color: #1e7e34;
+        }
+
+        .action-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .action-button.set-destination {
+            background-color: #ffc107;
+            color: #333;
+        }
+
+        .action-button.set-destination:hover {
+            background-color: #e0a800;
+        }
+
+        /* 詳細資訊面板樣式 */
+        #details-panel h2 {
+            margin-top: 0;
+            color: #007bff;
+        }
+
+        #details-panel p {
+            line-height: 1.6;
+        }
+
+        #map-link {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 15px;
+            background-color: #dc3545;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
         }
 
         /* 響應式設計 */
         @media (max-width: 900px) {
-            #main-container {
-                grid-template-columns: 1fr;
-                width: 100%;
+            .container {
+                flex-direction: column;
+            }
+
+            #details-panel {
+                position: static;
+                max-height: none;
             }
         }
     </style>
 </head>
 <body>
 
-    <header id="header-area" class="neumo-card" style="width: 90%; max-width: 1400px;">
-        <h1>🌟 AI智慧旅遊導覽系統 (台灣)</h1>
-        <p>規劃您的台灣智慧之旅，透過 Gemini AI 探索景點！</p>
-    </header>
+    <h1>AI 旅遊景點規劃介面</h1>
 
-    <div id="main-container">
-        <aside id="sidebar">
-            
-            <div id="api-setting-area" class="neumo-card">
-                <h3>🔑 AI 服務設定</h3>
-                <div class="neumo-inset">
-                    <label for="apiKey">輸入您的 API Key:</label>
-                    <input type="text" id="apiKey" class="neumo-input" placeholder="用於您的後端/代理服務">
-                    <small id="api-status" style="display: block; margin-top: 5px; color: orange;">(未驗證。建議在後端使用)</small>
+    <div id="api-key-section">
+        <label for="api-key-input">輸入 Gemini API Key:</label>
+        <input type="password" id="api-key-input" placeholder="sk-..." value="MOCK_API_KEY_123">
+        <button id="validate-button">驗證</button>
+        <span id="validation-status"></span>
+    </div>
+
+    <div class="container">
+        <div id="poi-section">
+            <h2>景點列表 (需 API Key 驗證後啟用)</h2>
+            <div id="poi-container">
                 </div>
-                <button id="validate-btn" class="neumo-button" style="width: 100%;">驗證/模擬連線</button>
-            </div>
+        </div>
 
-            <div id="attraction-menu-area" class="neumo-card">
-                <h3>📍 台灣精選景點</h3>
-                <ul id="menu-list">
-                    </ul>
-            </div>
-        </aside>
-
-        <section id="content-area">
-
-            <div id="spot-card-area" class="neumo-card">
-                <h3>🏞️ 景點介紹 (由 AI 生成)</h3>
-                <div id="spot-card">
-                    <h3 id="spot-name">請點選左側景點以開始導覽</h3>
-                    <p id="spot-description">這裡將顯示由 Gemini AI 生成的景點詳細介紹。</p>
-                    <p id="spot-coords" style="font-size: 0.9em; margin-top: 10px;">座標: N/A</p>
-                    <button id="generate-image-btn" class="neumo-button" style="margin-top: 15px;" disabled>
-                        ✨ 模擬 AI (Imagen) 生成景點圖片
-                    </button>
-
-                    <div id="spot-image-container">
-                        <p class="loading-text">景點圖片將在此處顯示...</p>
-                        <img id="spot-image" src="" alt="景點圖片" style="width: 100%; height: 100%; object-fit: cover;">
-                    </div>
-                </div>
-            </div>
-
-            <div id="map-area" class="neumo-card">
-                <h3>🗺️ 路線與地圖展示</h3>
-                <p id="map-status">地圖將顯示景點座標資訊</p>
-            </div>
-
-        </section>
+        <div id="details-panel">
+            <h2>景點詳細資訊</h2>
+            <p id="details-content">點擊左側景點卡片以查看介紹和地圖座標。</p>
+            <p id="details-coords"></p>
+        </div>
     </div>
 
     <script>
-        // 台灣旅遊景點資料 (僅包含基本資訊和 AI 提示詞)
-        const attractions = [
-            { id: 1, name: "台北 101", query: "用柔和、簡潔的風格，介紹台北 101 的特色、歷史意義與最佳參觀時機。用繁體中文，內容約 150 字。", lat: 25.0330, lon: 121.5654, description: '點擊景點後，AI 將生成更豐富的介紹...' },
-            { id: 2, name: "太魯閣國家公園", query: "用富有詩意、壯麗的風格，介紹花蓮太魯閣國家公園的峽谷景觀、燕子口與錐麓古道。用繁體中文，內容約 150 字。", lat: 24.1700, lon: 121.6100, description: '點擊景點後，AI 將生成更豐富的介紹...' },
-            { id: 3, name: "日月潭", query: "用寧靜、優美的風格，介紹南投日月潭的湖光山色、邵族文化與遊湖方式。用繁體中文，內容約 150 字。", lat: 23.8333, lon: 120.9000, description: '點擊景點後，AI 將生成更豐富的介紹...' },
-            { id: 4, name: "阿里山", query: "用清新、夢幻的風格，介紹阿里山的日出、雲海、神木與森林鐵路。用繁體中文，內容約 150 字。", lat: 23.5100, lon: 120.8000, description: '點擊景點後，AI 將生成更豐富的介紹...' },
+        // 景點模擬資料
+        const pointsOfInterest = [
+            { id: 1, name: '台北 101', description: '台灣最具代表性的摩天大樓，曾是世界第一高樓。', coords: '25.0330, 121.5654', imageStatus: 'initial' },
+            { id: 2, name: '日月潭', description: '台灣最大的天然湖泊，以其「雙潭秋月」而聞名。', coords: '23.8548, 120.9169', imageStatus: 'initial' },
+            { id: 3, name: '阿里山國家森林遊樂區', description: '以日出、雲海、晚霞、森林和高山鐵路五奇著稱。', coords: '23.5100, 120.8123', imageStatus: 'initial' },
+            { id: 4, name: '太魯閣國家公園', description: '壯麗的大理石峽谷景觀是其最著名的特色。', coords: '24.1950, 121.6212', imageStatus: 'initial' }
         ];
 
-        let currentAPIKey = '';
-        let currentSpot = null;
+        const poiContainer = document.getElementById('poi-container');
+        const keyInput = document.getElementById('api-key-input');
+        const validateButton = document.getElementById('validate-button');
+        const validationStatus = document.getElementById('validation-status');
+        const detailsPanel = document.getElementById('details-panel');
+        const detailsContent = document.getElementById('details-content');
+        const detailsCoords = document.getElementById('details-coords');
 
-        // *** 【重要】請替換為您的後端代理網址或 SDK 初始化邏輯 ***
-        const GEMINI_TEXT_API_ENDPOINT = 'YOUR_TEXT_GENERATION_PROXY_ENDPOINT'; 
-        const GEMINI_IMAGE_API_ENDPOINT = 'YOUR_IMAGE_GENERATION_PROXY_ENDPOINT';
-        // ***************************************************************
+        let isKeyValid = false;
 
-        // --- 啟動函式 ---
-        document.addEventListener('DOMContentLoaded', () => {
-            loadAttractionMenu();
-            document.getElementById('validate-btn').addEventListener('click', validateConnection);
-            document.getElementById('generate-image-btn').addEventListener('click', generateImage);
+        // ===============================================
+        // 1. 輸入 Gemini API Key 後驗證 (模擬)
+        // ===============================================
+
+        /**
+         * 模擬 API Key 驗證
+         * @param {string} key - 輸入的 API Key
+         */
+        function validateApiKey(key) {
+            // 模擬驗證邏輯：只要輸入的 key 不為空，且長度超過 10 個字元就視為有效
+            if (key && key.trim().length > 10) {
+                isKeyValid = true;
+                validationStatus.textContent = '驗證成功！功能已啟用。';
+                validationStatus.style.color = '#28a745';
+                validateButton.disabled = true;
+                // 啟用卡片功能
+                document.querySelectorAll('.poi-card').forEach(card => card.classList.add('enabled'));
+            } else {
+                isKeyValid = false;
+                validationStatus.textContent = '驗證失敗，請輸入有效的 Key。';
+                validationStatus.style.color = '#dc3545';
+                document.querySelectorAll('.poi-card').forEach(card => card.classList.remove('enabled'));
+            }
+        }
+
+        validateButton.addEventListener('click', () => {
+            validateApiKey(keyInput.value);
         });
+        
+        // 預先檢查範例中的預設 Key
+        validateApiKey(keyInput.value); 
 
-        // --- 景點選單載入 ---
-        function loadAttractionMenu() {
-            const menuList = document.getElementById('menu-list');
-            menuList.innerHTML = '';
-            attractions.forEach(spot => {
-                const li = document.createElement('li');
-                li.className = 'tour-item';
-                li.textContent = spot.name;
-                li.dataset.id = spot.id;
-                li.addEventListener('click', () => selectSpot(spot.id));
-                menuList.appendChild(li);
+
+        // ===============================================
+        // 3. 模擬透過 AI 生成景點圖片
+        // ===============================================
+        
+        /**
+         * 模擬非同步的 AI 圖片生成過程
+         * @param {number} id - 景點 ID
+         */
+        function mockAiImageGeneration(id) {
+            const poi = pointsOfInterest.find(p => p.id === id);
+            if (!poi || poi.imageStatus !== 'initial') return;
+
+            poi.imageStatus = 'generating';
+            renderCards(); // 更新卡片狀態為「生成中」
+
+            // 模擬 AI 生成圖片需要 2 秒
+            setTimeout(() => {
+                poi.imageStatus = 'generated';
+                // 模擬生成的圖片 URL
+                poi.imageUrl = `https://picsum.photos/300/180?random=${id}`; 
+                renderCards(); // 更新卡片狀態為「已生成」
+            }, 2000);
+        }
+
+        // ===============================================
+        // 4. 加入點選景點卡片即可設置旅遊路線目的地的功能
+        // 2. 點選景點後顯示介紹與地圖座標
+        // ===============================================
+
+        /**
+         * 處理卡片點擊事件 (顯示詳細資訊)
+         * @param {object} poi - 景點物件
+         */
+        function handleCardClick(poi) {
+            // 2. 點選景點後顯示介紹與地圖座標
+            detailsContent.innerHTML = `
+                <h3>${poi.name}</h3>
+                <p>${poi.description}</p>
+                <button 
+                    class="action-button set-destination" 
+                    onclick="setDestination('${poi.name}', '${poi.coords}')"
+                >
+                    設為目的地
+                </button>
+            `;
+            detailsCoords.innerHTML = `
+                <p><strong>地圖座標:</strong> ${poi.coords}</p>
+                <a 
+                    id="map-link"
+                    href="https://www.google.com/maps/search/?api=1&query=${poi.coords}" 
+                    target="_blank"
+                >
+                    在地圖上查看
+                </a>
+            `;
+
+            // 將詳細資訊面板捲動到頂部
+            detailsPanel.scrollTop = 0;
+        }
+        
+        /**
+         * 設置旅遊路線目的地
+         * @param {string} name - 景點名稱
+         * @param {string} coords - 景點座標
+         */
+        function setDestination(name, coords) {
+            // 4. 設置旅遊路線目的地 (簡單的訊息提示)
+            alert(`已將【${name}】(座標: ${coords}) 設為您的旅遊路線目的地！\n您可以開始規劃到此處的路線了。`);
+            console.log(`目的地已設定: ${name} (${coords})`);
+        }
+
+
+        // ===============================================
+        // 介面渲染邏輯
+        // ===============================================
+
+        /**
+         * 渲染所有景點卡片
+         */
+        function renderCards() {
+            poiContainer.innerHTML = ''; // 清空現有內容
+
+            pointsOfInterest.forEach(poi => {
+                const card = document.createElement('div');
+                card.classList.add('poi-card');
+                card.setAttribute('data-id', poi.id);
+
+                // 根據 API Key 驗證狀態設定 enabled 類別
+                if (isKeyValid) {
+                    card.classList.add('enabled');
+                }
+
+                // 圖片佔位符內容
+                let imageHtml = '';
+                let buttonHtml = '';
+
+                if (poi.imageStatus === 'initial') {
+                    // 初始狀態
+                    imageHtml = `<p>點擊按鈕，模擬 AI 生成圖片</p>`;
+                    buttonHtml = `<button class="action-button generate" onclick="mockAiImageGeneration(${poi.id})">AI 生成圖片</button>`;
+                } else if (poi.imageStatus === 'generating') {
+                    // 生成中狀態
+                    imageHtml = `
+                        <p>AI 圖片生成中...</p>
+                        <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+                    `;
+                    buttonHtml = `<button class="action-button generate" disabled>生成中 (2s)</button>`;
+                } else if (poi.imageStatus === 'generated') {
+                    // 已生成狀態
+                    imageHtml = `<img src="${poi.imageUrl}" alt="AI 生成的 ${poi.name} 圖片">`;
+                    buttonHtml = `<button class="action-button generate" disabled>圖片已生成</button>`;
+                }
+
+                card.innerHTML = `
+                    <div class="card-image-placeholder">
+                        ${imageHtml}
+                    </div>
+                    <div class="card-content">
+                        <h3>${poi.name}</h3>
+                        <p>${poi.description.substring(0, 25)}...</p>
+                    </div>
+                    <div class="card-actions">
+                        ${buttonHtml}
+                    </div>
+                `;
+
+                // 註冊點擊事件 (用於顯示詳細資訊，排除點擊動作按鈕)
+                card.addEventListener('click', (event) => {
+                    // 避免點擊 action-button 觸發 card click (Event Bubbling)
+                    if (event.target.closest('.action-button')) return; 
+                    
+                    if (isKeyValid) {
+                        handleCardClick(poi);
+                    } else {
+                        alert('請先輸入並驗證您的 Gemini API Key！');
+                    }
+                });
+                
+                poiContainer.appendChild(card);
             });
         }
 
-        // --- 模擬 API 連線驗證 ---
-        function validateConnection() {
-            const apiKeyInput = document.getElementById('apiKey');
-            const apiStatus = document.getElementById('api-status');
-            const key = apiKeyInput.value.trim();
+        // 頁面載入時首次渲染
+        renderCards();
 
-            if (key.length > 10) {
-                currentAPIKey = key;
-                apiStatus.textContent = '✅ API 連線模擬成功。請選擇景點！';
-                apiStatus.style.color = 'green';
-                document.getElementById('generate-image-btn').disabled = false;
-            } else {
-                currentAPIKey = '';
-                apiStatus.textContent = '❌ 請輸入 Key (僅為模擬驗證，請勿在此處暴露真實 API Key)';
-                apiStatus.style.color = 'red';
-                document.getElementById('generate-image-btn').disabled = true;
-            }
-        }
-
-        // --- 點選景點 ---
-        function selectSpot(id) {
-            const spot = attractions.find(s => s.id === id);
-            if (!spot) return;
-
-            currentSpot = spot;
-
-            // 更新選單樣式
-            document.querySelectorAll('.tour-item').forEach(item => item.classList.remove('active'));
-            document.querySelector(`.tour-item[data-id="${id}"]`).classList.add('active');
-
-            // 更新景點卡片基本資訊
-            document.getElementById('spot-name').textContent = `📍 ${spot.name}`;
-            document.getElementById('spot-coords').textContent = `座標: ${spot.lat}° N, ${spot.lon}° E`;
-
-            // 更新地圖展示區 (模擬)
-            document.getElementById('map-status').innerHTML = 
-                `<strong>🗺️ 模擬地圖：</strong><br>
-                景點：${spot.name}<br>
-                座標：(${spot.lat}, ${spot.lon})<br>
-                <small>（此處可嵌入實際 Google Maps 或 Leaflet 地圖）</small>`;
-            
-            // 重置圖片區
-            const imageContainer = document.getElementById('spot-image-container');
-            const spotImage = document.getElementById('spot-image');
-            imageContainer.querySelector('.loading-text').textContent = '點擊按鈕模擬 AI 生成圖片...';
-            imageContainer.querySelector('.loading-text').style.display = 'block';
-            spotImage.style.display = 'none';
-            spotImage.src = '';
-
-            // 呼叫 Gemini 函式生成景點介紹
-            fetchGeminiDescription(spot.query);
-        }
+        // 將重要函數暴露給全域範圍，以便在內聯事件處理程序中使用 (如 onclick)
+        window.mockAiImageGeneration = mockAiImageGeneration;
+        window.setDestination = setDestination;
         
-        // --- 1. 透過 Gemini API 生成景點介紹 ---
-        async function fetchGeminiDescription(prompt) {
-            const descElement = document.getElementById('spot-description');
-            
-            descElement.innerHTML = 'AI 服務連線中... 正在生成景點介紹... <span class="loading-text" style="display:inline;"></span>';
-            descElement.style.fontStyle = 'italic';
-
-            try {
-                // 實際的 API 呼叫 (請將 GEMINI_TEXT_API_ENDPOINT 替換為您的後端代理網址)
-                const response = await fetch(GEMINI_TEXT_API_ENDPOINT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        prompt: prompt,
-                        apiKey: currentAPIKey // 實際使用時，應由後端處理此 Key
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`API 請求失敗: ${response.status}`);
-                }
-                
-                // 假設 API 回傳 JSON 格式為 { "text": "景點介紹內容" }
-                const data = await response.json();
-                
-                // 模擬/替換為 AI 生成的內容
-                const generatedText = data.text || `[模擬] AI 服務已連線，這是關於 ${currentSpot.name} 的簡短描述。${prompt}`;
-
-                descElement.textContent = generatedText;
-                descElement.style.fontStyle = 'normal';
-
-            } catch (error) {
-                console.error("生成介紹失敗:", error);
-                descElement.textContent = `❌ 介紹生成失敗。請檢查 API 代理服務是否正常連線。錯誤: ${error.message}`;
-                descElement.style.color = 'red';
-            }
-        }
-        
-        // --- 2. 透過 Imagen/其他 AI 模型生成景點圖片 ---
-        async function generateImage() {
-            if (!currentAPIKey || !currentSpot) {
-                alert('請先驗證連線並選擇一個景點！');
-                return;
-            }
-
-            const imageContainer = document.getElementById('spot-image-container');
-            const spotImage = document.getElementById('spot-image');
-            const loadingText = imageContainer.querySelector('.loading-text');
-            const generateBtn = document.getElementById('generate-image-btn');
-            
-            const imagePrompt = `台灣景點，${currentSpot.name}，新擬物化 (Neumorphism) 風格的插畫，柔和光線，高質感。`;
-
-            // 1. 載入狀態
-            generateBtn.disabled = true;
-            generateBtn.textContent = `✨ 正在生成圖片：「${currentSpot.name}」...`;
-            loadingText.textContent = `AI 正在為「${currentSpot.name}」繪製圖片，提示詞：${imagePrompt}`;
-            loadingText.style.display = 'block';
-            spotImage.style.display = 'none';
-
-            try {
-                // 實際的圖片生成 API 呼叫 (請將 GEMINI_IMAGE_API_ENDPOINT 替換為您的後端代理網址)
-                const response = await fetch(GEMINI_IMAGE_API_ENDPOINT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        prompt: imagePrompt,
-                        apiKey: currentAPIKey // 實際使用時，應由後端處理此 Key
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`圖片 API 請求失敗: ${response.status}`);
-                }
-                
-                // 假設 API 回傳 JSON 格式為 { "imageUrl": "base64 或公開 URL" }
-                const data = await response.json();
-
-                // 模擬圖片 URL (實際應為 data.imageUrl)
-                const mockImageUrl = `https://picsum.photos/seed/${currentSpot.id + 100}/800/600`;
-
-                spotImage.src = data.imageUrl || mockImageUrl; // 使用模擬圖片或實際 API 回傳的 URL
-                
-                loadingText.style.display = 'none';
-                spotImage.style.display = 'block';
-                
-            } catch (error) {
-                console.error("圖片生成失敗:", error);
-                loadingText.textContent = `❌ 圖片生成失敗。請檢查 API 服務。錯誤: ${error.message}`;
-                loadingText.style.color = 'red';
-            } finally {
-                generateBtn.disabled = false;
-                generateBtn.textContent = '✅ 圖片生成完成！';
-                setTimeout(() => {
-                    generateBtn.textContent = '✨ 模擬 AI (Imagen) 生成景點圖片';
-                }, 2000);
-            }
-        }
     </script>
+
 </body>
 </html>
