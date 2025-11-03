@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 智慧旅遊導覽系統 - 台灣 (增強版)</title>
+    <title>AI 智慧旅遊導覽系統 - 台灣 (行程規劃增強版)</title>
     <style>
         /* Neumorphism 柔和亞克力風格變數 */
         :root {
@@ -12,9 +12,9 @@
             --light-shadow: #ffffff;
             --dark-shadow: #a3b1c6;
             --text-color: #333;
-            --accent-color: #4CAF50;  /* 綠色 */
-            --warning-color: #f44336; /* 紅色 */
-            --info-color: #2196F3;    /* 藍色 */
+            --accent-color: #4CAF50;  /* 綠色 (啟程地) */
+            --warning-color: #f44336; /* 紅色 (目的地) */
+            --info-color: #2196F3;    /* 藍色 (規劃按鈕) */
             --border-radius: 12px;
             --padding-size: 20px;
         }
@@ -43,7 +43,7 @@
         .sidebar { width: 30%; min-width: 300px; display: flex; flex-direction: column; gap: var(--padding-size); }
         .main-panel { width: 70%; display: flex; flex-direction: column; gap: var(--padding-size); }
         
-        /* 按鈕基礎樣式 */
+        /* 按鈕與輸入框樣式 */
         .nav-button {
             border: none; padding: 10px 15px; border-radius: var(--border-radius); background: var(--main-bg-color);
             cursor: pointer; font-weight: bold; color: var(--text-color);
@@ -56,47 +56,58 @@
             color: var(--accent-color);
         }
         
-        /* 卡片網格與樣式 */
+        .input-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 10px;
+        }
+        .input-group label {
+            width: 70px;
+            font-weight: bold;
+        }
+        .input-group input[type="text"] {
+            flex-grow: 1;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            background: var(--main-bg-color);
+            box-shadow: inset 2px 2px 5px var(--dark-shadow), inset -2px -2px 5px var(--light-shadow);
+        }
+        .trip-status p { margin: 5px 0; }
+        
+        /* 旅遊行程展示區 */
+        #itinerary-display {
+            min-height: 150px;
+            margin-top: 15px;
+            border-radius: var(--border-radius);
+            background: var(--main-bg-color);
+            box-shadow: inset 4px 4px 8px var(--dark-shadow), inset -4px -4px 8px var(--light-shadow);
+            padding: 15px;
+            font-size: 0.95em;
+        }
+        #itinerary-display h4 {
+            color: var(--info-color);
+            border-bottom: 1px solid var(--dark-shadow);
+            padding-bottom: 5px;
+            margin-top: 0;
+        }
+
+        /* 卡片與圖片樣式 (延續前一版) */
         .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--padding-size); }
         .spot-card {
             border-radius: var(--border-radius); background: var(--main-bg-color);
             box-shadow: 6px 6px 12px var(--dark-shadow), -6px -6px 12px var(--light-shadow);
             cursor: pointer; transition: all 0.3s ease; overflow: hidden; position: relative;
         }
-        .spot-card:hover { transform: translateY(-3px); box-shadow: 8px 8px 16px var(--dark-shadow), -8px -8px 16px var(--light-shadow); }
-        .card-content { padding: 15px; }
-        .card-actions { display: flex; justify-content: space-between; margin-top: 10px; }
-        .action-btn {
-            padding: 8px 12px; font-size: 0.9em; border: none; border-radius: 8px; background: var(--main-bg-color);
-            box-shadow: 2px 2px 4px var(--dark-shadow), -2px -2px 4px var(--light-shadow);
-            cursor: pointer; transition: all 0.2s ease;
-        }
         .action-btn.origin { color: white; background-color: var(--accent-color); }
         .action-btn.destination { color: white; background-color: var(--warning-color); }
-        .action-btn:active { box-shadow: inset 2px 2px 4px var(--dark-shadow), inset -2px -2px 4px var(--light-shadow); }
-        
-        /* 圖片佔位符 */
         .card-image-placeholder {
             width: 100%; height: 180px; background-color: #d1d9e6;
             box-shadow: inset 1px 1px 3px var(--dark-shadow), inset -1px -1px 3px var(--light-shadow);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             font-size: 0.9em; color: #666; padding: 10px; box-sizing: border-box;
             background-size: cover; background-position: center; text-shadow: 1px 1px 2px white;
-        }
-        
-        /* 分類按鈕列表 */
-        .menu-list {
-            display: flex; flex-wrap: wrap; gap: 10px; padding: 0; list-style: none;
-            justify-content: flex-start; /* 靠左排列 */
-        }
-        .menu-list li { margin-bottom: 5px; }
-        
-        /* 地圖顯示 */
-        #map-display {
-            width: 100%; height: 400px; background-color: #a3b1c6;
-            box-shadow: inset 8px 8px 16px var(--dark-shadow), inset -8px -8px 16px var(--light-shadow);
-            border-radius: var(--border-radius); display: flex; justify-content: center; align-items: center;
-            color: var(--light-shadow); font-size: 1.2em; margin-top: 20px;
         }
     </style>
 </head>
@@ -122,10 +133,30 @@
         <div class="main-content">
             <div class="sidebar">
                 <div class="trip-status neumorphic-outset">
-                    <h3>📍 您的旅程狀態</h3>
-                    <p>啟程地: <span id="origin-display" style="color:var(--accent-color)"><strong>未設定</strong></span></p>
-                    <p>目的地: <span id="destination-display" style="color:var(--warning-color)"><strong>未設定</strong></span></p>
-                    <button class="nav-button" id="start-planning-btn" style="width: 100%; background-color: var(--info-color); color: white; margin-top: 15px;">AI 自動規劃路線</button>
+                    <h3>📍 行程起訖點設定</h3>
+                    
+                    <div class="input-group">
+                        <label for="input-origin" style="color:var(--accent-color)">啟程地</label>
+                        <input type="text" id="input-origin" placeholder="手動輸入或點擊卡片設定" />
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="input-destination" style="color:var(--warning-color)">目的地</label>
+                        <input type="text" id="input-destination" placeholder="手動輸入或點擊卡片設定" />
+                    </div>
+                    
+                    <p style="font-size:0.85em; color:#666; margin-top: -5px;">
+                        當手動輸入欄位有值時，將優先使用輸入值進行規劃。
+                    </p>
+                    
+                    <button class="nav-button" id="start-planning-btn" style="width: 100%; background-color: var(--info-color); color: white; margin-top: 15px;">
+                        🚀 AI 自動規劃路線
+                    </button>
+
+                    <div id="itinerary-display">
+                        <h4>AI 旅遊行程規劃結果</h4>
+                        <p id="itinerary-text">點擊上方按鈕開始規劃行程。</p>
+                    </div>
                 </div>
                 
                 <div class="spot-menu neumorphic-outset">
@@ -189,11 +220,6 @@
             { id: 14, name: "國立海洋生物博物館", description: "🐠 台灣最大水族館，可夜宿的海洋世界。", location: "屏東車城", category: "其他", coords: { lat: 22.0461, lng: 120.6989 }, image: null },
         ];
 
-        let currentTrip = {
-            origin: null,
-            destination: null
-        };
-        
         let currentCategory = '全部'; // 預設顯示全部
 
         // --- 1. 模擬 API Key 驗證功能 ---
@@ -215,7 +241,7 @@
             }
         }
         
-        // --- 2. 點選景點卡片後顯示介紹與地圖座標 ---
+        // --- 2. 點選景點卡片後顯示介紹與地圖座標 (維持不變) ---
         function showSpotDetails(spotId) {
             const spot = SPOTS_DATA.find(s => s.id === spotId);
             if (!spot) return;
@@ -223,7 +249,6 @@
             const infoDisplay = document.getElementById('spot-info-display');
             const mapDisplay = document.getElementById('map-display');
             
-            // 更新景點資訊
             infoDisplay.innerHTML = `
                 <h4>✨ ${spot.name} (${spot.category})</h4>
                 <p style="font-size:0.95em; color:var(--text-color);">${spot.description}</p>
@@ -231,7 +256,6 @@
                 <p style="margin: 5px 0;"><strong>🌐 座標:</strong> Lat: ${spot.coords.lat.toFixed(4)}, Lng: ${spot.coords.lng.toFixed(4)}</p>
             `;
 
-            // 模擬地圖座標顯示
             mapDisplay.innerHTML = `
                 <div style="text-align: center;">
                     <strong>[模擬地圖]</strong><br>
@@ -240,11 +264,10 @@
                 </div>
             `;
             
-            // 捲動到景點資訊區
             infoDisplay.scrollIntoView({ behavior: 'smooth' });
         }
         
-        // --- 3. 點擊按鈕生成圖片 (模擬) ---
+        // --- 3. 點擊按鈕生成圖片 (模擬，維持不變) ---
         function simulateImageGeneration(event, spotId) {
             event.stopPropagation();
             const card = document.querySelector(`.spot-card[data-id="${spotId}"]`);
@@ -257,58 +280,40 @@
             imagePlaceholder.style.backgroundColor = '#a3b1c6';
 
             setTimeout(() => {
-                const randomImage = `https://picsum.photos/400/200?random=${spotId + Math.random()}`; // 使用範例圖片
+                const randomImage = `https://picsum.photos/400/200?random=${spotId + Math.random()}`;
                 imagePlaceholder.style.backgroundImage = `url('${randomImage}')`;
                 imagePlaceholder.style.color = 'transparent';
                 imagePlaceholder.innerHTML = '';
-                
-                // 將圖片網址存入資料中，如果需要的話
                 spot.image = randomImage; 
-                
-                // 生成成功後，讓圖片可以點擊顯示詳情
-                const newButton = document.createElement('button');
-                newButton.className = 'action-btn';
-                newButton.style.marginTop = '5px';
-                newButton.style.backgroundColor = 'rgba(0,0,0,0.5)';
-                newButton.style.color = 'white';
-                newButton.innerText = '圖片生成完成!';
-                
-                imagePlaceholder.appendChild(newButton);
-            }, 1500); 
+            }, 1500);
         }
 
-        // --- 4. 點擊景點卡片後，設定啟程地或目的地 ---
+        // --- 4. 點擊卡片設定啟程地或目的地 (改為寫入輸入框) ---
         function setWaypoint(event, spotId, type) {
             event.stopPropagation();
             const spot = SPOTS_DATA.find(s => s.id === spotId);
             if (!spot) return;
             
-            const displayId = type === 'origin' ? 'origin-display' : 'destination-display';
-            
-            // 清除所有卡片上的標記
-            document.querySelectorAll(`.action-btn.${type}`).forEach(btn => {
-                btn.classList.remove(type);
-            });
-            
-            // 更新當前行程狀態
-            currentTrip[type] = spot;
-            document.getElementById(displayId).innerHTML = `<strong>${spot.name}</strong>`;
-            
-            // 在卡片按鈕上標記已選取的狀態
-            const card = document.querySelector(`.spot-card[data-id="${spotId}"]`);
-            if(card) {
-                const targetBtn = card.querySelector(`.action-btn:nth-child(${type === 'origin' ? 1 : 2})`);
-                targetBtn.classList.add(type);
-            }
+            const inputElement = document.getElementById(`input-${type}`);
+            const waypointName = spot.name + ' (' + spot.location + ')';
 
-            alert(`已將「${spot.name}」設為您的${type === 'origin' ? '啟程地' : '目的地'}。`);
+            // 清除卡片上的樣式
+            document.querySelectorAll('.action-btn.origin').forEach(btn => btn.classList.remove('origin'));
+            document.querySelectorAll('.action-btn.destination').forEach(btn => btn.classList.remove('destination'));
+
+            // 設置輸入框的值
+            inputElement.value = waypointName;
+
+            // 為當前卡片的按鈕添加樣式
+            event.target.classList.add(type);
+            
+            alert(`已將景點「${spot.name}」設為您的${type === 'origin' ? '啟程地' : '目的地'}，並同步至輸入框。`);
         }
         
-        // --- 5. 景點分類篩選功能 ---
+        // --- 5. 景點分類篩選功能 (維持不變) ---
         function filterSpots(category) {
             currentCategory = category;
             
-            // 處理分類按鈕的 Active 狀態
             document.querySelectorAll('.category-btn').forEach(btn => {
                 btn.classList.remove('active');
                 if (btn.dataset.category === category) {
@@ -316,16 +321,61 @@
                 }
             });
             
-            renderSpotCards(); // 重新渲染卡片
+            renderSpotCards();
+        }
+
+        // --- 6. AI 自動規劃路線功能 (核心新增) ---
+        function startRoutePlanning() {
+            const origin = document.getElementById('input-origin').value.trim();
+            const destination = document.getElementById('input-destination').value.trim();
+            const itineraryDisplay = document.getElementById('itinerary-text');
+            const apiStatus = document.getElementById('api-status-light').classList.contains('valid');
+
+            if (!apiStatus) {
+                alert('請先驗證 API Key 才能使用 AI 規劃功能！');
+                return;
+            }
+
+            if (!origin || !destination) {
+                alert('請輸入或點選設定啟程地與目的地！');
+                return;
+            }
+            
+            // 顯示規劃中狀態
+            itineraryDisplay.innerHTML = `<p style="color:var(--info-color); font-weight:bold;">AI 正在分析您的需求，規劃從「${origin}」到「${destination}」的最佳行程...</p>`;
+            
+            // 模擬 AI 規劃行程的延遲和結果
+            setTimeout(() => {
+                const simulatedItinerary = `
+                    <p style="font-weight: bold;">✅ 規劃完成！(模擬)</p>
+                    <ol style="margin: 5px 0; padding-left: 20px;">
+                        <li><strong>Day 1 上午:</strong> 從「${origin}」出發，前往最近的歷史景點（如安平古堡）。</li>
+                        <li><strong>Day 1 下午:</strong> 參觀文創園區（如駁二藝術特區），體驗當地設計。</li>
+                        <li><strong>Day 1 晚餐:</strong> 前往「六合夜市」享用在地海鮮美食。</li>
+                        <li><strong>Day 2:</strong> 根據需求，推薦前往自然景點（如日月潭）作為旅程中點。</li>
+                        <li><strong>Day 3 結束:</strong> 抵達「${destination}」並結束行程。</li>
+                    </ol>
+                    <p style="font-size: 0.85em; color: var(--accent-color);">路線已同步至地圖展示區！(模擬)</p>
+                `;
+                itineraryDisplay.innerHTML = simulatedItinerary;
+                
+                // 更新地圖展示區（模擬路線標記）
+                document.getElementById('map-display').innerHTML = `
+                    <div style="text-align: center;">
+                        <strong>[模擬地圖路線]</strong><br>
+                        顯示「${origin}」到「${destination}」的建議路徑與景點標記。
+                    </div>
+                `;
+
+            }, 2500); // 模擬 2.5 秒的規劃時間
         }
 
 
-        // --- 景點卡片動態生成與渲染 ---
+        // --- 景點卡片動態生成與渲染 (維持不變) ---
         function renderSpotCards() {
             const container = document.getElementById('spot-cards-container');
             container.innerHTML = ''; 
 
-            // 根據 currentCategory 篩選景點
             const filteredSpots = currentCategory === '全部'
                 ? SPOTS_DATA
                 : SPOTS_DATA.filter(spot => spot.category === currentCategory);
@@ -341,17 +391,14 @@
                 card.dataset.id = spot.id;
                 card.onclick = () => showSpotDetails(spot.id);
 
-                // 圖片佔位符邏輯
                 const imageStyle = spot.image ? `background-image: url('${spot.image}'); color: transparent;` : '';
                 const imageContent = spot.image ? '' : `
                     AI 生成景點圖片
                     <button class="action-btn nav-button" style="background-color: var(--info-color); color: white;" onclick="simulateImageGeneration(event, ${spot.id})">生成圖片</button>
                 `;
 
-                // 檢查是否已設定為起點或終點，設定按鈕樣式
-                const isOrigin = currentTrip.origin && currentTrip.origin.id === spot.id ? 'origin' : '';
-                const isDestination = currentTrip.destination && currentTrip.destination.id === spot.id ? 'destination' : '';
-
+                // **卡片按鈕樣式不再依賴全局變數，而是在點擊時設置**
+                // 但為了視覺上保持連貫性，我們保留按鈕的類別
                 card.innerHTML = `
                     <div class="card-image-placeholder" style="${imageStyle}">
                         ${imageContent}
@@ -361,8 +408,8 @@
                         <p style="font-size: 0.9em; margin-bottom: 5px;">${spot.description}</p>
                         <p style="font-size: 0.8em; color: #666;">地點: ${spot.location}</p>
                         <div class="card-actions">
-                            <button class="action-btn ${isOrigin}" onclick="setWaypoint(event, ${spot.id}, 'origin')">設為啟程地</button>
-                            <button class="action-btn ${isDestination}" onclick="setWaypoint(event, ${spot.id}, 'destination')">設為目的地</button>
+                            <button class="action-btn" onclick="setWaypoint(event, ${spot.id}, 'origin')">設為啟程地</button>
+                            <button class="action-btn" onclick="setWaypoint(event, ${spot.id}, 'destination')">設為目的地</button>
                         </div>
                     </div>
                 `;
@@ -381,16 +428,8 @@
                 });
             });
 
-            // 為路線規劃按鈕添加事件 (模擬)
-            document.getElementById('start-planning-btn').addEventListener('click', () => {
-                if (!currentTrip.origin || !currentTrip.destination) {
-                    alert('請先設定啟程地與目的地才能規劃路線！');
-                    return;
-                }
-                
-                alert(`AI 規劃請求發送中...\n從 ${currentTrip.origin.name} 到 ${currentTrip.destination.name} 的最佳路線將由 AI 演算法生成。`);
-                // 這裡將是呼叫 AI 規劃 API 的實際邏輯
-            });
+            // 為路線規劃按鈕添加事件
+            document.getElementById('start-planning-btn').addEventListener('click', startRoutePlanning);
         });
 
     </script>
