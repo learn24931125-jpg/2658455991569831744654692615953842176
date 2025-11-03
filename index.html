@@ -13,6 +13,7 @@
             --dark-shadow: #a1a1a1;
             --primary-color: #4CAF50; /* 亮綠色 */
             --danger-color: #F44336; /* 紅色 */
+            --accent-color: #00bcd4; /* 藍綠色 (用於選定狀態) */
         }
 
         body {
@@ -36,64 +37,16 @@
         }
 
         /* 標題與 API 區塊 */
-        .header-area, .api-settings {
-            grid-column: 1 / -1;
-            margin-bottom: 10px;
-        }
-        
+        .header-area, .api-settings { grid-column: 1 / -1; margin-bottom: 10px; }
         .header-area { text-align: center; padding: 20px 0; }
         .header-area h1 { margin: 0; font-size: 2em; letter-spacing: 2px; text-shadow: 1px 1px 2px var(--light-shadow); }
-
-        .api-settings {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-            justify-content: center;
-            padding: 15px 30px;
-        }
-
-        .api-settings input {
-            padding: 10px;
-            border: none;
-            border-radius: 8px;
-            background: var(--main-bg-color);
-            box-shadow: inset 2px 2px 5px var(--dark-shadow),
-                        inset -5px -5px 10px var(--light-shadow);
-            width: 300px;
-            color: #333;
-            font-size: 1em;
-        }
-        
-        .api-settings button {
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            box-shadow: 3px 3px 6px rgba(0,0,0,0.2),
-                        -3px -3px 6px rgba(255,255,255,0.7);
-        }
-        
-        .api-settings button:active {
-            box-shadow: inset 2px 2px 5px var(--dark-shadow),
-                        inset -5px -5px 10px var(--light-shadow);
-        }
-        
-        .api-status {
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .status-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background-color: var(--danger-color);
-        }
+        .api-settings { display: flex; gap: 20px; align-items: center; justify-content: center; padding: 15px 30px; }
+        .api-settings input { padding: 10px; border: none; border-radius: 8px; background: var(--main-bg-color); box-shadow: inset 2px 2px 5px var(--dark-shadow), inset -5px -5px 10px var(--light-shadow); width: 300px; color: #333; font-size: 1em; }
+        .api-settings button { background: var(--primary-color); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; box-shadow: 3px 3px 6px rgba(0,0,0,0.2), -3px -3px 6px rgba(255,255,255,0.7); }
+        .api-settings button:active { box-shadow: inset 2px 2px 5px var(--dark-shadow), inset -5px -5px 10px var(--light-shadow); }
+        .api-status { font-weight: bold; display: flex; align-items: center; gap: 5px; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; background-color: var(--danger-color); }
         .connected { background-color: var(--primary-color); }
-
 
         /* 景點選單樣式 (左側側邊欄) */
         .menu-area h3 { margin-top: 0; padding: 10px 15px; color: #555; border-bottom: 2px solid var(--dark-shadow); }
@@ -108,62 +61,26 @@
             grid-template-rows: auto auto 1fr; 
             padding: 0;
         }
-        .main-content h2 { margin-bottom: 0;}
 
         /* 景點卡片區樣式 */
-        .card-container {
-            display: flex;
-            gap: 20px;
-            overflow-x: auto;
-            padding-bottom: 10px;
-            padding-top: 10px;
-        }
-
-        .spot-card {
-            min-width: 300px;
-            cursor: pointer;
-            padding: 0;
-            overflow: hidden;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .spot-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 10px 10px 20px var(--dark-shadow),
-                        -10px -10px 20px var(--light-shadow);
-        }
-
-        .card-image {
-            width: 100%;
-            height: 150px;
-            background-color: #ccc;
-            box-shadow: inset 2px 2px 5px var(--dark-shadow),
-                        inset -5px -5px 10px var(--light-shadow);
-        }
-        
+        .card-container { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 10px; padding-top: 10px; }
+        .spot-card { min-width: 300px; cursor: pointer; padding: 0; overflow: hidden; text-align: center; display: flex; flex-direction: column; }
+        .spot-card:hover { transform: translateY(-3px); box-shadow: 10px 10px 20px var(--dark-shadow), -10px -10px 20px var(--light-shadow); }
+        .card-image { width: 100%; height: 150px; background-color: #ccc; box-shadow: inset 2px 2px 5px var(--dark-shadow), inset -5px -5px 10px var(--light-shadow); }
         .card-image i { font-size: 3em; line-height: 150px; color: #888; }
         .card-image img { width: 100%; height: 100%; object-fit: cover; }
-
-        .card-content {
-            padding: 15px;
-            text-align: left;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
+        .card-content { padding: 15px; text-align: left; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
         .card-content h4 { margin-top: 0; color: #333; }
         .card-content p { font-size: 0.9em; color: #555; }
 
+        /* 路線規劃按鈕群組 */
         .action-buttons {
             display: flex;
             gap: 10px;
             margin-top: 10px;
         }
         
+        /* 基本按鈕樣式 */
         .action-buttons button {
             flex-grow: 1;
             padding: 8px;
@@ -175,103 +92,85 @@
             font-weight: 600;
             box-shadow: 3px 3px 6px var(--dark-shadow),
                         -3px -3px 6px var(--light-shadow);
+            transition: all 0.2s ease;
         }
 
         .action-buttons button:active {
             box-shadow: inset 2px 2px 5px var(--dark-shadow),
                         inset -5px -5px 10px var(--light-shadow);
         }
-        
+
+        /* 選定狀態的按鈕樣式 (更深的內凹) */
+        .action-buttons button.selected {
+            background-color: var(--accent-color);
+            color: white;
+            box-shadow: inset 5px 5px 10px #0097a7, /* 深化陰影 */
+                        inset -5px -5px 10px #00e5ff;
+        }
+
+
         /* 地圖展示區樣式 */
+        .map-section {
+            display: grid;
+            gap: 10px;
+        }
+
+        .map-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #route-status {
+            font-size: 0.9em;
+            color: #555;
+            font-weight: 500;
+            margin-left: 10px;
+        }
+
+        #plan-route-btn {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 3px 3px 6px var(--dark-shadow), -3px -3px 6px var(--light-shadow);
+            transition: all 0.2s;
+        }
+        #plan-route-btn:disabled {
+            background-color: #ccc;
+            color: #666;
+            cursor: not-allowed;
+            box-shadow: inset 2px 2px 5px var(--dark-shadow);
+        }
+
         .map-area { height: 500px; }
         .map-placeholder {
             width: 100%;
             height: 100%;
             background-color: #c9c9c9;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            font-size: 2em;
+            font-size: 1.5em;
             color: #666;
             border-radius: 12px;
             box-shadow: inset 8px 8px 16px var(--dark-shadow),
                         inset -8px -8px 16px var(--light-shadow);
-        }
-
-        /* Modal 樣式 */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 10;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.4);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-        }
-
-        .modal-content {
-            background-color: var(--main-bg-color);
-            margin: 10% auto;
-            padding: 30px;
-            width: 80%;
-            max-width: 600px;
-            border-radius: 15px;
-            box-shadow: 10px 10px 20px var(--dark-shadow),
-                        -10px -10px 20px var(--light-shadow);
-            position: relative;
-        }
-
-        .close-btn {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            position: absolute;
-            top: 10px;
-            right: 20px;
-        }
-
-        .close-btn:hover,
-        .close-btn:focus {
-            color: #333;
-            text-decoration: none;
-            cursor: pointer;
+            text-align: center;
+            line-height: 1.5;
         }
         
-        #modal-image-area {
-            height: 250px;
-            margin-top: 15px;
-            border-radius: 10px;
-            background-color: #ccc;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-style: italic;
-            color: #666;
-            box-shadow: inset 5px 5px 10px var(--dark-shadow),
-                        inset -5px -5px 10px var(--light-shadow);
-        }
-        
-        #modal-image-area img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 10px;
-        }
-        
-        /* 生成圖片按鈕 */
-        #generate-image-btn {
-            background-color: #2196F3; /* 藍色 */
-            color: white;
-            padding: 10px 15px;
-            margin-top: 15px;
-            display: block;
-            width: 100%;
-        }
+        /* Modal 樣式 (維持不變) */
+        .modal { display: none; position: fixed; z-index: 10; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
+        .modal-content { background-color: var(--main-bg-color); margin: 10% auto; padding: 30px; width: 80%; max-width: 600px; border-radius: 15px; box-shadow: 10px 10px 20px var(--dark-shadow), -10px -10px 20px var(--light-shadow); position: relative; }
+        .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; position: absolute; top: 10px; right: 20px; }
+        .close-btn:hover, .close-btn:focus { color: #333; text-decoration: none; cursor: pointer; }
+        #modal-image-area { height: 250px; margin-top: 15px; border-radius: 10px; background-color: #ccc; display: flex; align-items: center; justify-content: center; font-style: italic; color: #666; box-shadow: inset 5px 5px 10px var(--dark-shadow), inset -5px -5px 10px var(--light-shadow); }
+        #modal-image-area img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+        #generate-image-btn { background-color: #2196F3; color: white; padding: 10px 15px; margin-top: 15px; display: block; width: 100%; }
         
     </style>
 </head>
@@ -284,7 +183,7 @@
     <div class="api-settings neumorphic">
         <i class="fas fa-cogs"></i>
         <input type="text" id="api-key-input" placeholder="輸入您的 Gemini API Key">
-        <button id="connect-api-btn"><i class="fas fa-key"></i> 連接 API</button>
+        <button id="connect-api-btn" class="neumorphic"><i class="fas fa-key"></i> 連接 API</button>
         <div class="api-status">
             API 狀態: <span id="api-status-text">未連接</span> <span id="status-dot" class="status-dot"></span>
         </div>
@@ -302,7 +201,7 @@
         <hr style="border-top: 1px solid var(--dark-shadow); border-bottom: 1px solid var(--light-shadow); margin: 15px 0;">
         <h3><i class="fas fa-route"></i> 路線規劃</h3>
         <ul>
-            <li><i class="fas fa-plus"></i> 新增路線</li>
+            <li onclick="resetRouteSelection()"><i class="fas fa-times-circle"></i> 清除選定路線</li>
             <li><i class="fas fa-save"></i> 儲存路線</li>
         </ul>
     </div>
@@ -313,10 +212,21 @@
         <div class="card-container" id="card-container">
             </div>
 
-        <h2><i class="fas fa-globe-asia"></i> 路線規劃與地圖</h2>
-        <div class="map-area neumorphic">
-            <div class="map-placeholder">
-                [地圖展示區 - 路線會在此處顯示]
+        <div class="map-section">
+            <div class="map-header">
+                <h2><i class="fas fa-globe-asia"></i> 路線規劃與地圖</h2>
+                <div>
+                    <span id="route-status"></span>
+                    <button id="plan-route-btn" class="neumorphic" disabled><i class="fas fa-sitemap"></i> 開始 AI 規劃</button>
+                </div>
+            </div>
+            <div class="map-area neumorphic">
+                <div class="map-placeholder">
+                    <p>
+                        <i class="fas fa-info-circle"></i> 請在地圖下方的景點卡片中<br>
+                        點選「設為啟程地」與「設為目的地」來開始規劃。
+                    </p>
+                </div>
             </div>
         </div>
     </div>
@@ -341,6 +251,17 @@
     </div>
     
     <script>
+        // --- 全局狀態管理 ---
+        let GEMINI_API_KEY = '';
+        let startSpotId = null; // 儲存啟程地景點的 ID
+        let endSpotId = null;   // 儲存目的地景點的 ID
+        
+        const cardContainer = document.getElementById('card-container');
+        const modal = document.getElementById('spotModal');
+        const routeStatusEl = document.getElementById('route-status');
+        const planRouteBtn = document.getElementById('plan-route-btn');
+        const mapPlaceholder = document.querySelector('.map-placeholder');
+
         // --- 景點資料設定 ---
         const TAIWAN_SPOTS = [
             { id: 1, name: "台北 101 大樓", intro: "這座標誌性的摩天大樓曾經是世界第一高樓。它代表了台灣現代化的成就，提供壯觀的城市景觀，是跨年煙火的熱門地點。", coords: "25.033964, 121.564468", imagePrompt: "Taipei 101 skyscraper at sunset, photorealistic, cinematic lighting." },
@@ -350,19 +271,21 @@
             { id: 5, name: "高雄駁二藝術特區", intro: "由老舊的港口倉庫群改造而成的文創園區，充滿了塗鴉藝術、獨立書店與特色咖啡廳，是南台灣的藝術樞紐。", coords: "22.622437, 120.287233", imagePrompt: "Pier-2 Art Center in Kaohsiung, colorful warehouse, modern art installations." },
         ];
         
-        let GEMINI_API_KEY = '';
-        const cardContainer = document.getElementById('card-container');
-        const modal = document.getElementById('spotModal');
-
-        // --- 1. 動態景點卡片生成 ---
+        // --- 1. 動態景點卡片生成 (略作調整以綁定路由事件) ---
         function renderCards() {
+            cardContainer.innerHTML = ''; // 清空舊卡片
             TAIWAN_SPOTS.forEach(spot => {
                 const card = document.createElement('div');
                 card.className = 'spot-card neumorphic';
-                
-                // 使用 data-* 屬性儲存景點 ID，方便後續查找
                 card.setAttribute('data-id', spot.id);
                 
+                // 檢查是否為選定狀態，以應用 CSS class
+                const isStart = startSpotId === spot.id;
+                const isEnd = endSpotId === spot.id;
+                
+                const startBtnClass = isStart ? 'selected' : '';
+                const endBtnClass = isEnd ? 'selected' : '';
+
                 card.innerHTML = `
                     <div class="card-image"><i class="fas fa-image"></i></div>
                     <div class="card-content">
@@ -371,35 +294,144 @@
                             <p>${spot.intro.substring(0, 30)}...</p>
                         </div>
                         <div class="action-buttons">
-                            <button onclick="handleRouteAction(${spot.id}, 'start'); event.stopPropagation();"><i class="fas fa-road"></i> 設為啟程地</button>
-                            <button onclick="handleRouteAction(${spot.id}, 'end'); event.stopPropagation();"><i class="fas fa-flag"></i> 設為目的地</button>
+                            <button data-action="start" data-id="${spot.id}" class="${startBtnClass}"><i class="fas fa-road"></i> 設為啟程地</button>
+                            <button data-action="end" data-id="${spot.id}" class="${endBtnClass}"><i class="fas fa-flag"></i> 設為目的地</button>
                         </div>
                         <button onclick="showSpotDetails(${spot.id}); event.stopPropagation();" 
-                            style="margin-top: 10px; background-color: #2196F3; color: white;">
+                            style="margin-top: 10px; background-color: #2196F3; color: white; box-shadow: 3px 3px 6px #1377b7, -3px -3px 6px #2fbbff;">
                             <i class="fas fa-search"></i> 看介紹/生成圖片
                         </button>
                     </div>
                 `;
                 cardContainer.appendChild(card);
             });
+            // 每次重新渲染後，重新綁定路線規劃按鈕事件
+            bindRouteButtons();
+            updateRouteUI();
+        }
+
+        // --- 2. 路線規劃核心功能 ---
+        function bindRouteButtons() {
+            document.querySelectorAll('.action-buttons button').forEach(button => {
+                button.removeEventListener('click', handleRouteAction); // 移除舊事件
+                button.addEventListener('click', handleRouteAction); // 綁定新事件
+            });
+            planRouteBtn.onclick = startRoutePlanning;
+        }
+
+        function handleRouteAction(event) {
+            const button = event.currentTarget;
+            const spotId = parseInt(button.getAttribute('data-id'));
+            const action = button.getAttribute('data-action');
+            
+            // 防止事件冒泡到卡片點擊事件
+            event.stopPropagation();
+            
+            if (action === 'start') {
+                if (startSpotId === spotId) {
+                    startSpotId = null; // 取消選定
+                } else if (endSpotId === spotId) {
+                    alert('此景點已被設為目的地，請先取消目的地的選擇。');
+                    return;
+                } else {
+                    startSpotId = spotId;
+                }
+            } else if (action === 'end') {
+                if (endSpotId === spotId) {
+                    endSpotId = null; // 取消選定
+                } else if (startSpotId === spotId) {
+                     alert('此景點已被設為啟程地，請先取消啟程地的選擇。');
+                     return;
+                } else {
+                    endSpotId = spotId;
+                }
+            }
+
+            // 重新渲染卡片以更新按鈕狀態
+            renderCards(); 
+        }
+
+        function updateRouteUI() {
+            const startName = startSpotId ? TAIWAN_SPOTS.find(s => s.id === startSpotId).name : '未選定';
+            const endName = endSpotId ? TAIWAN_SPOTS.find(s => s.id === endSpotId).name : '未選定';
+
+            routeStatusEl.innerHTML = `
+                <i class="fas fa-road" style="color: ${startSpotId ? 'var(--primary-color)' : '#999'}"></i> 啟程地: ${startName} <br>
+                <i class="fas fa-flag" style="color: ${endSpotId ? 'var(--primary-color)' : '#999'}"></i> 目的地: ${endName}
+            `;
+            
+            // 啟用/禁用規劃按鈕
+            if (startSpotId && endSpotId) {
+                planRouteBtn.disabled = false;
+                mapPlaceholder.innerHTML = `<p><i class="fas fa-check-circle" style="color: var(--primary-color);"></i> 起點與終點已選定，請點擊「開始 AI 規劃」按鈕。</p>`;
+            } else {
+                planRouteBtn.disabled = true;
+                mapPlaceholder.innerHTML = `<p><i class="fas fa-info-circle"></i> 請在地圖下方的景點卡片中<br>點選「設為啟程地」與「設為目的地」來開始規劃。</p>`;
+            }
         }
         
-        // --- 2. API Key 驗證功能 ---
-        document.getElementById('connect-api-btn').addEventListener('click', connectApi);
+        function resetRouteSelection() {
+            startSpotId = null;
+            endSpotId = null;
+            renderCards(); // 重新渲染並更新 UI
+            alert('已清除所有選定的啟程地和目的地！');
+        }
 
+        function startRoutePlanning() {
+            if (!startSpotId || !endSpotId) {
+                alert('請先選定啟程地與目的地！');
+                return;
+            }
+            
+            const startSpot = TAIWAN_SPOTS.find(s => s.id === startSpotId);
+            const endSpot = TAIWAN_SPOTS.find(s => s.id === endSpotId);
+            
+            planRouteBtn.disabled = true;
+            planRouteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> AI 規劃中...';
+
+            mapPlaceholder.innerHTML = `
+                <i class="fas fa-route"></i> 
+                <p>
+                    AI 智慧路線規劃中...<br>
+                    從 <b>${startSpot.name}</b> (${startSpot.coords}) <br>
+                    到 <b>${endSpot.name}</b> (${endSpot.coords})
+                </p>
+                <i class="fas fa-map"></i>
+            `;
+
+            // 模擬 AI 規劃時間
+            setTimeout(() => {
+                planRouteBtn.disabled = false;
+                planRouteBtn.innerHTML = '<i class="fas fa-sitemap"></i> 開始 AI 規劃';
+                
+                mapPlaceholder.innerHTML = `
+                    <i class="fas fa-check-circle" style="color: var(--primary-color); font-size: 3em; margin-bottom: 10px;"></i>
+                    <p>
+                        **路線規劃完成！**<br>
+                        建議路線：走高速公路轉快速道路，預計行駛時間 4.5 小時。<br>
+                        [此處應載入互動式地圖顯示規劃線路]
+                    </p>
+                `;
+                alert(`AI 規劃成功：${startSpot.name} 到 ${endSpot.name} 的最佳路線已生成！`);
+            }, 3000);
+        }
+
+        // --- 其他既有功能維持不變 ---
+        
         function connectApi() {
-            const input = document.getElementById('api-key-input');
+            // ... (API 連接邏輯) ...
+             const input = document.getElementById('api-key-input');
             const statusText = document.getElementById('api-status-text');
             const statusDot = document.getElementById('status-dot');
             
             const key = input.value.trim();
             
-            if (key.length >= 20) { // 模擬驗證：檢查長度
+            if (key.length >= 20) { 
                 GEMINI_API_KEY = key;
                 statusText.textContent = '已連接';
                 statusDot.classList.add('connected');
                 input.disabled = true;
-                this.disabled = true;
+                document.getElementById('connect-api-btn').disabled = true;
                 alert('API Key 連接成功！現在可以嘗試生成圖片。');
             } else {
                 GEMINI_API_KEY = '';
@@ -408,41 +440,31 @@
                 alert('API Key 無效或太短，請輸入一個有效的 Key (模擬驗證失敗)。');
             }
         }
-        
-        // --- 3. 點選景點後顯示介紹與地圖座標 ---
+
         function showSpotDetails(id) {
+            // ... (顯示 Modal 邏輯) ...
             const spot = TAIWAN_SPOTS.find(s => s.id === id);
             if (!spot) return;
 
-            // 更新 Modal 內容
             document.getElementById('modal-title').textContent = spot.name;
             document.getElementById('modal-coords').textContent = spot.coords;
             document.getElementById('modal-intro').textContent = spot.intro;
             
-            // 清空圖片區
             const imageArea = document.getElementById('modal-image-area');
             imageArea.innerHTML = '點擊下方按鈕，使用 AI 生成此景點的專屬圖片';
             imageArea.style.color = '#666';
             
-            // 綁定圖片生成按鈕的事件
             const generateBtn = document.getElementById('generate-image-btn');
             generateBtn.onclick = () => generateSpotImage(id);
             
             modal.style.display = 'block';
         }
         
-        // Modal 關閉功能
-        document.querySelector('.close-btn').onclick = () => {
-            modal.style.display = 'none';
-        };
-        window.onclick = (event) => {
-            if (event.target == modal) {
-                modal.style.display = 'none';
-            }
-        };
+        document.querySelector('.close-btn').onclick = () => { modal.style.display = 'none'; };
+        window.onclick = (event) => { if (event.target == modal) { modal.style.display = 'none'; } };
 
-        // --- 4. 點擊按鈕生成圖片 (模擬) ---
         function generateSpotImage(id) {
+            // ... (模擬圖片生成邏輯) ...
             if (!GEMINI_API_KEY) {
                 alert('請先在上方輸入並連接您的 API Key！');
                 return;
@@ -452,35 +474,26 @@
             const imageArea = document.getElementById('modal-image-area');
             const generateBtn = document.getElementById('generate-image-btn');
             
-            // 模擬生成過程
             imageArea.innerHTML = `<i class="fas fa-spinner fa-spin"></i> AI 正在根據提示生成圖片："${spot.imagePrompt}"...`;
             imageArea.style.color = '#444';
             generateBtn.disabled = true;
 
             setTimeout(() => {
-                // 模擬圖片 URL (這裡使用一個台灣相關的 placeholder 圖片)
                 const imageUrl = "https://picsum.photos/600/250?random=" + spot.id; 
                 
                 imageArea.innerHTML = `<img src="${imageUrl}" alt="${spot.name} AI Generated Image">`;
                 imageArea.style.color = 'initial';
                 generateBtn.disabled = false;
                 alert(`景點圖片生成成功！`);
-            }, 3000); // 模擬 3 秒延遲
-        }
-        
-        // --- 路線規劃功能 (簡單模擬) ---
-        function handleRouteAction(id, type) {
-            const spot = TAIWAN_SPOTS.find(s => s.id === id);
-            const mapPlaceholder = document.querySelector('.map-placeholder');
-            
-            let actionText = type === 'start' ? '啟程地' : '目的地';
-            alert(`已將【${spot.name}】設定為您的${actionText}！\n\n[地圖 API 應在此處更新路線]`);
-            
-            mapPlaceholder.innerHTML = `<i class="fas fa-route"></i> 正在規劃從 [啟程地] 到 ${spot.name} (${actionText}) 的路線...`;
+            }, 3000); 
         }
 
         // 頁面載入完成後執行
-        document.addEventListener('DOMContentLoaded', renderCards);
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('connect-api-btn').addEventListener('click', connectApi);
+            renderCards(); // 載入卡片並初始化路線狀態
+        });
+        
     </script>
 </body>
 </html>
