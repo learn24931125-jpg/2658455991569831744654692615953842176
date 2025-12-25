@@ -4,117 +4,267 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 智慧旅遊導覽系統 - 探索台灣</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>AI 台灣旅遊導覽系統 - 整合測試版</title>
     <style>
-        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .card-hover:hover { transform: translateY(-5px); transition: all 0.3s ease; }
+        :root {
+            --primary: #2a9d8f;
+            --dark: #264653;
+            --light: #f4f1de;
+            --accent: #e9c46a;
+        }
+
+        body {
+            font-family: "Microsoft JhengHei", sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: var(--light);
+        }
+
+        /* 標題區 */
+        header {
+            background: var(--dark);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* 側邊設定欄 */
+        .sidebar {
+            width: 320px;
+            background: white;
+            padding: 20px;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        input, select, button {
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        button:hover { background: #21867a; }
+
+        .info-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+        }
+
+        /* 主內容區 */
+        .content {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* 地圖佔位符 */
+        #map-area {
+            height: 250px;
+            background: #e0e0e0;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            border: 2px dashed #ccc;
+        }
+
+        /* 景點卡片網格 */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: 0.3s;
+        }
+
+        .card:hover { transform: translateY(-5px); }
+
+        .card img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            background: #eee;
+        }
+
+        .card-content { padding: 15px; }
+        .card-content h4 { margin: 0 0 10px 0; color: var(--dark); }
+        .card-content p { font-size: 14px; color: #666; line-height: 1.5; }
+
+        .loading-spinner {
+            text-align: center;
+            padding: 50px;
+            display: none;
+        }
     </style>
 </head>
-<body class="bg-gray-50 font-sans">
+<body>
 
-    <header class="gradient-bg text-white py-12 px-6 text-center shadow-lg">
-        <h1 class="text-4xl md:text-5xl font-bold mb-4">
-            <i class="fa-solid fa-map-location-dot mr-3"></i>AI 智慧旅遊導覽系統
-        </h1>
-        <p class="text-lg opacity-90">利用 AI 技術，規劃專屬於你的台灣深度之旅</p>
-    </header>
+<header>
+    <h1>🇹🇼 AI 智慧旅遊導覽系統</h1>
+</header>
 
-    <main class="container mx-auto px-4 py-8">
-        
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            <div class="lg:col-span-1 space-y-8">
-                
-                <section class="bg-white p-6 rounded-xl shadow-md border border-gray-100">
-                    <h2 class="text-xl font-semibold mb-4 flex items-center">
-                        <i class="fa-solid fa-key text-indigo-500 mr-2"></i>API 服務設定
-                    </h2>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Gemini / OpenAI API Key</label>
-                            <input type="password" placeholder="輸入你的 API 金鑰" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">偏好語言</label>
-                            <select class="w-full px-4 py-2 border rounded-lg">
-                                <option>繁體中文</option>
-                                <option>English</option>
-                                <option>日本語</option>
-                            </select>
-                        </div>
-                        <button class="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition">
-                            儲存並連線
-                        </button>
-                    </div>
-                </section>
-
-                <section class="bg-white p-6 rounded-xl shadow-md border border-gray-100">
-                    <h2 class="text-xl font-semibold mb-4 flex items-center">
-                        <i class="fa-solid fa-earth-asia text-green-500 mr-2"></i>地圖導覽
-                    </h2>
-                    <div class="bg-gray-200 w-full h-64 rounded-lg flex items-center justify-center text-gray-500 relative overflow-hidden">
-                        <img src="https://api.placeholder.com/400/320?text=Map+View" class="absolute inset-0 w-full h-full object-cover opacity-50" alt="Map Placeholder">
-                        <p class="z-10 font-medium">地圖載入中...</p>
-                    </div>
-                    <p class="mt-3 text-sm text-gray-500 text-center italic">點擊卡片可切換地圖中心點</p>
-                </section>
-            </div>
-
-            <div class="lg:col-span-2">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800">熱門 AI 推薦景點</h2>
-                    <button class="text-indigo-600 hover:underline font-medium">查看更多</button>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white rounded-xl shadow-md overflow-hidden card-hover border border-gray-100">
-                        <img src="https://images.unsplash.com/photo-1552912099-b9d193c0524d?auto=format&fit=crop&w=600&q=80" alt="Taipei 101" class="h-48 w-full object-cover">
-                        <div class="p-5">
-                            <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">台北市</span>
-                            <h3 class="text-xl font-bold mt-2">台北 101</h3>
-                            <p class="text-gray-600 mt-2 text-sm line-clamp-2">台灣最著名的地標，曾為世界第一高樓。內有購物中心與景觀台。</p>
-                            <div class="mt-4 flex justify-between items-center">
-                                <span class="text-yellow-500"><i class="fa-solid fa-star"></i> 4.8</span>
-                                <button class="bg-gray-100 px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-200">AI 解說</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-xl shadow-md overflow-hidden card-hover border border-gray-100">
-                        <img src="https://images.unsplash.com/photo-1621995155110-6396f4325788?auto=format&fit=crop&w=600&q=80" alt="Taroko" class="h-48 w-full object-cover">
-                        <div class="p-5">
-                            <span class="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded">花蓮縣</span>
-                            <h3 class="text-xl font-bold mt-2">太魯閣國家公園</h3>
-                            <p class="text-gray-600 mt-2 text-sm line-clamp-2">以壯麗的大理石峽谷聞名遐邇，是台灣大自然的鬼斧神工之作。</p>
-                            <div class="mt-4 flex justify-between items-center">
-                                <span class="text-yellow-500"><i class="fa-solid fa-star"></i> 4.9</span>
-                                <button class="bg-gray-100 px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-200">AI 解說</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-xl shadow-md overflow-hidden card-hover border border-gray-100">
-                        <img src="https://images.unsplash.com/photo-1596700878149-a29d5b03513b?auto=format&fit=crop&w=600&q=80" alt="Sun Moon Lake" class="h-48 w-full object-cover">
-                        <div class="p-5">
-                            <span class="bg-orange-100 text-orange-800 text-xs font-semibold px-2.5 py-0.5 rounded">南投縣</span>
-                            <h3 class="text-xl font-bold mt-2">日月潭</h3>
-                            <p class="text-gray-600 mt-2 text-sm line-clamp-2">台灣最大的淡水湖泊，晨曦中的湖光山色美不勝收。</p>
-                            <div class="mt-4 flex justify-between items-center">
-                                <span class="text-yellow-500"><i class="fa-solid fa-star"></i> 4.7</span>
-                                <button class="bg-gray-100 px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-200">AI 解說</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<main>
+    <aside class="sidebar">
+        <div class="input-group">
+            <label><strong>1. API 設定</strong></label>
+            <input type="password" id="api-key" placeholder="貼上您的 Gemini API Key">
         </div>
-    </main>
 
-    <footer class="text-center py-8 text-gray-500 border-t mt-12">
-        <p>© 2025 AI 智慧旅遊導覽系統 - 讓 AI 帶你玩台灣</p>
-    </footer>
+        <div class="input-group">
+            <label><strong>2. 選擇目的地</strong></label>
+            <select id="city-select">
+                <option value="台北" data-lat="25.03" data-lon="121.56">台北市</option>
+                <option value="台中" data-lat="24.14" data-lon="120.67">台中市</option>
+                <option value="台南" data-lat="22.99" data-lon="120.21">台南市</option>
+                <option value="高雄" data-lat="22.61" data-lon="120.31">高雄市</option>
+                <option value="花蓮" data-lat="23.97" data-lon="121.60">花蓮縣</option>
+                <option value="宜蘭" data-lat="24.75" data-lon="121.75">宜蘭縣</option>
+            </select>
+        </div>
+
+        <button onclick="startGuide()">開始 AI 導覽規劃</button>
+
+        <div class="info-box">
+            <div id="weather-info">🌤️ 天氣資訊載入中...</div>
+            <hr>
+            <div id="ai-summary">請點擊按鈕，AI 將為您提供建議。</div>
+        </div>
+    </aside>
+
+    <section class="content">
+        <div id="map-area">📍 當前城市經緯度：<span id="coords-display">等待選擇...</span></div>
+        
+        <h3>✨ AI 推薦景點</h3>
+        <div id="loading" class="loading-spinner">⏳ AI 正在思考中，請稍候...</div>
+        <div class="cards-grid" id="cards-grid">
+            </div>
+    </section>
+</main>
+
+<script>
+    const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+
+    async function startGuide() {
+        const apiKey = document.getElementById('api-key').value;
+        const citySelect = document.getElementById('city-select');
+        const selected = citySelect.options[citySelect.selectedIndex];
+        
+        const cityName = selected.value;
+        const lat = selected.dataset.lat;
+        const lon = selected.dataset.lon;
+
+        if (!apiKey) {
+            alert("請先輸入您的 Gemini API Key！");
+            return;
+        }
+
+        // 重置介面
+        document.getElementById('coords-display').innerText = `${lat}, ${lon}`;
+        document.getElementById('loading').style.display = "block";
+        document.getElementById('cards-grid').innerHTML = "";
+
+        // 1. 抓取天氣 (Open-Meteo)
+        fetchWeather(cityName, lat, lon);
+
+        // 2. 抓取 AI 建議 (Gemini)
+        fetchAIData(apiKey, cityName);
+    }
+
+    async function fetchWeather(name, lat, lon) {
+        try {
+            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+            const data = await res.json();
+            const temp = data.current_weather.temperature;
+            const code = data.current_weather.weathercode;
+            const weatherDesc = code <= 3 ? "晴朗" : (code >= 61 ? "有雨" : "多雲");
+            document.getElementById('weather-info').innerHTML = `<strong>${name} 當前天氣</strong><br>${weatherDesc} ${temp}°C`;
+        } catch (e) {
+            document.getElementById('weather-info').innerText = "天氣獲取失敗";
+        }
+    }
+
+    async function fetchAIData(key, cityName) {
+        const prompt = `你是一位台灣旅遊專家。請針對「${cityName}」提供旅遊建議。請回傳 JSON 格式如下：{"summary": "建議內容", "attractions": [{"title": "名稱", "desc": "描述", "keyword": "英文關鍵字"}]}`;
+
+        try {
+            const response = await fetch(`${GEMINI_URL}?key=${key}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { response_mime_type: "application/json" }
+                })
+            });
+
+            const data = await response.json();
+            const result = JSON.parse(data.candidates[0].content.parts[0].text);
+
+            // 更新 UI
+            document.getElementById('ai-summary').innerText = result.summary;
+            document.getElementById('loading').style.display = "none";
+            
+            result.attractions.forEach(attr => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                // 使用 LoremFlickr 根據關鍵字抓取台灣相關圖片
+                const imgUrl = `https://loremflickr.com/400/300/${attr.keyword},taiwan/all`;
+                
+                card.innerHTML = `
+                    <img src="${imgUrl}" alt="${attr.title}">
+                    <div class="card-content">
+                        <h4>${attr.title}</h4>
+                        <p>${attr.desc}</p>
+                    </div>
+                `;
+                document.getElementById('cards-grid').appendChild(card);
+            });
+
+        } catch (error) {
+            console.error(error);
+            document.getElementById('loading').innerText = "❌ 發生錯誤，請檢查 API Key 或網路。";
+        }
+    }
+</script>
 
 </body>
 </html>
