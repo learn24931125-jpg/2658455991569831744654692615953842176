@@ -4,219 +4,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 智慧旅遊導覽 - 實時地圖版</title>
-    
+    <title>AI 智慧旅遊導覽 - 動態生成版</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
     <style>
-        :root {
-            --primary-color: #2c3e50;
-            --accent-color: #3498db;
-            --bg-color: #f4f7f6;
-            --card-bg: #ffffff;
-        }
+        :root { --primary: #2c3e50; --accent: #3498db; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif; margin: 0; background: var(--bg); }
+        header { background: var(--primary); color: white; padding: 1rem; text-align: center; }
+        .container { max-width: 1300px; margin: 0 auto; padding: 20px; }
 
-        body {
-            font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
-            margin: 0;
-            background-color: var(--bg-color);
-        }
+        /* API & 搜尋區 */
+        .config-box { background: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .input-group { display: flex; gap: 10px; margin-bottom: 10px; }
+        input, textarea { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        textarea { height: 60px; resize: none; }
+        
+        button { padding: 10px 20px; background: var(--accent); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button:disabled { background: #ccc; }
 
-        header {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 1.5rem;
-            text-align: center;
-        }
+        /* 佈局 */
+        .main-content { display: grid; grid-template-columns: 400px 1fr; gap: 20px; height: 70vh; }
+        .list-container { overflow-y: auto; background: white; border-radius: 10px; padding: 15px; border: 1px solid #ddd; }
+        #map { width: 100%; height: 100%; border-radius: 10px; }
 
-        .container {
-            max-width: 1300px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+        /* 卡片樣式 */
+        .card { border: 1px solid #eee; border-radius: 8px; margin-bottom: 15px; cursor: pointer; overflow: hidden; transition: 0.3s; }
+        .card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .card img { width: 100%; height: 120px; object-fit: cover; background: #eee; }
+        .card-body { padding: 10px; }
+        .card-body h3 { margin: 0; font-size: 1rem; color: var(--primary); }
+        .card-body p { font-size: 0.8rem; color: #666; margin: 5px 0 0; }
 
-        /* API 設定區 */
-        .api-section {
-            background: var(--card-bg);
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        input[type="text"] {
-            flex: 1;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-
-        /* 內容佈局 */
-        .main-content {
-            display: grid;
-            grid-template-columns: 400px 1fr;
-            gap: 20px;
-            height: 75vh;
-        }
-
-        @media (max-width: 900px) {
-            .main-content { 
-                grid-template-columns: 1fr; 
-                height: auto;
-            }
-        }
-
-        /* 景點卡片滾動區 */
-        .attractions-list {
-            overflow-y: auto;
-            padding-right: 10px;
-        }
-
-        .card {
-            background: var(--card-bg);
-            border-radius: 10px;
-            margin-bottom: 15px;
-            cursor: pointer;
-            overflow: hidden;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            transition: all 0.3s;
-            border: 2px solid transparent;
-        }
-
-        .card:hover {
-            transform: scale(1.02);
-            border-color: var(--accent-color);
-        }
-
-        .card img {
-            width: 100%;
-            height: 120px;
-            object-fit: cover;
-        }
-
-        .card-content { padding: 12px; }
-        .card-content h3 { margin: 0; font-size: 1.1rem; }
-        .card-content p { font-size: 0.85rem; color: #666; margin-top: 5px; }
-
-        /* 地圖展示區 */
-        #map {
-            width: 100%;
-            height: 100%;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            z-index: 1; /* 確保地圖層級正確 */
-        }
-
-        button {
-            padding: 8px 15px;
-            background: var(--accent-color);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
+        /* Loading 動畫 */
+        .loader { display: none; text-align: center; padding: 20px; color: var(--accent); font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>🇹🇼 AI 智慧旅遊導覽系統</h1>
-    </header>
+<header>
+    <h1>🇹🇼 AI 智慧旅遊導覽系統</h1>
+</header>
 
-    <div class="container">
-        
-        <section class="api-section">
-            <strong>⚙️ AI 配置:</strong>
-            <input type="text" id="apiKey" placeholder="在此輸入 API Key (選填)">
-            <button onclick="alert('設定已儲存')">儲存</button>
-        </section>
-
-        <div class="main-content">
-            <div class="attractions-list">
-                <h3>📍 精選景點 (點擊可導航地圖)</h3>
-                
-                <div class="card" onclick="focusLocation(25.0339, 121.5644, '台北 101')">
-                    <img src="https://images.unsplash.com/photo-1504233529578-6d46babb6d1f?auto=format&fit=crop&w=500&q=60">
-                    <div class="card-content">
-                        <h3>台北 101</h3>
-                        <p>位於信義區，曾經是世界第一高樓。</p>
-                    </div>
-                </div>
-
-                <div class="card" onclick="focusLocation(25.1099, 121.8452, '九份老街')">
-                    <img src="https://images.unsplash.com/photo-1571212891312-349f76a59339?auto=format&fit=crop&w=500&q=60">
-                    <div class="card-content">
-                        <h3>九份老街</h3>
-                        <p>懷舊的採金小鎮，迷人的山城夜景。</p>
-                    </div>
-                </div>
-
-                <div class="card" onclick="focusLocation(24.159, 121.621, '太魯閣國家公園')">
-                    <img src="https://images.unsplash.com/photo-1621944190310-e3cca1564bd7?auto=format&fit=crop&w=500&q=60">
-                    <div class="card-content">
-                        <h3>太魯閣國家公園</h3>
-                        <p>大理岩峽谷，台灣最震撼的自然景觀。</p>
-                    </div>
-                </div>
-
-                <div class="card" onclick="focusLocation(22.6203, 120.2831, '高雄駁二')">
-                    <img src="https://images.unsplash.com/photo-1590758414902-12499d63c5be?auto=format&fit=crop&w=500&q=60">
-                    <div class="card-content">
-                        <h3>駁二藝術特區</h3>
-                        <p>港口倉庫改建的藝術空間，充滿文創氣息。</p>
-                    </div>
-                </div>
-            </div>
-
-            <div id="map"></div>
+<div class="container">
+    <section class="config-box">
+        <div class="input-group">
+            <input type="text" id="apiKey" placeholder="請輸入 OpenAI API Key (sk-...)">
         </div>
+        <div class="input-group">
+            <textarea id="userInput" placeholder="例如：我想去有水的地方、預算 2000 元，請推薦台灣北部的景點"></textarea>
+            <button id="sendBtn" onclick="askAI()">開始規劃</button>
+        </div>
+    </section>
+
+    <div id="loader" class="loader">🪄 AI 正在為您挑選最佳景點...</div>
+
+    <div class="main-content">
+        <div class="list-container" id="attractionsList">
+            <p style="text-align: center; color: #999;">請在上方輸入需求，<br>AI 建議的景點將顯示於此。</p>
+        </div>
+        <div id="map"></div>
     </div>
+</div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
-    <script>
-        // 1. 初始化地圖，設定中心點為台灣 (緯度, 經度, 縮放層級)
-        var map = L.map('map').setView([23.973, 120.979], 7);
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // 初始化地圖
+    var map = L.map('map').setView([23.973, 120.979], 7);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
 
-        // 2. 載入 OpenStreetMap 圖層
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
+    var markers = [];
 
-        // 3. 預設標記點資料
-        const locations = [
-            { name: "台北 101", lat: 25.0339, lng: 121.5644 },
-            { name: "九份老街", lat: 25.1099, lng: 121.8452 },
-            { name: "太魯閣國家公園", lat: 24.159, lng: 121.621 },
-            { name: "駁二藝術特區", lat: 22.6203, lng: 120.2831 }
-        ];
+    async function askAI() {
+        const apiKey = document.getElementById('apiKey').value;
+        const userInput = document.getElementById('userInput').value;
+        const btn = document.getElementById('sendBtn');
+        const loader = document.getElementById('loader');
 
-        // 4. 在地圖上放置標記點
-        locations.forEach(loc => {
-            L.marker([loc.lat, loc.lng])
-             .addTo(map)
-             .bindPopup(`<b>${loc.name}</b>`);
-        });
+        if (!apiKey) return alert("請先輸入 API Key！");
+        if (!userInput) return alert("請輸入你想去的行程需求！");
 
-        // 5. 互動功能：點擊卡片跳轉到該座標
-        function focusLocation(lat, lng, name) {
-            // 平滑移動地圖中心
-            map.flyTo([lat, lng], 15, {
-                animate: true,
-                duration: 1.5
+        // 顯示 Loading
+        loader.style.display = "block";
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: "gpt-3.5-turbo", // 或使用 "gpt-4o"
+                    messages: [{
+                        role: "system",
+                        content: `你是一個專業的台灣旅遊嚮導。請根據使用者的需求推薦 3-5 個景點。
+                        你必須嚴格以 JSON 格式回傳，格式如下：
+                        {"attractions": [{"name": "景點名", "description": "簡短介紹", "lat": 緯度數字, "lng": 經度數字, "imgKeyword": "英文關鍵字"}]}
+                        不要回傳任何 JSON 以外的文字。`
+                    }, {
+                        role: "user",
+                        content: userInput
+                    }],
+                    temperature: 0.7
+                })
             });
 
-            // 自動彈出氣泡
-            setTimeout(() => {
-                L.popup()
-                    .setLatLng([lat, lng])
-                    .setContent(`<b>${name}</b><br>歡迎來到這裏！`)
-                    .openOn(map);
-            }, 1600);
+            const data = await response.json();
+            const aiContent = JSON.parse(data.choices[0].message.content);
+            renderAttractions(aiContent.attractions);
+
+        } catch (error) {
+            console.error("API Error:", error);
+            alert("發生錯誤，請檢查 API Key 或網路連線。");
+        } finally {
+            loader.style.display = "none";
+            btn.disabled = false;
         }
-    </script>
+    }
+
+    function renderAttractions(data) {
+        const listEl = document.getElementById('attractionsList');
+        listEl.innerHTML = ""; // 清空舊內容
+        
+        // 清除舊地圖標記
+        markers.forEach(m => map.removeLayer(m));
+        markers = [];
+
+        const bounds = [];
+
+        data.forEach(item => {
+            // 1. 建立卡片 HTML
+            // 這裡使用 Unsplash Source API 根據關鍵字隨機抓取圖片
+            const imgSrc = `https://source.unsplash.com/featured/?${item.imgKeyword},taiwan`;
+            
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <img src="${imgSrc}" alt="${item.name}">
+                <div class="card-body">
+                    <h3>${item.name}</h3>
+                    <p>${item.description}</p>
+                </div>
+            `;
+            card.onclick = () => focusLocation(item.lat, item.lng, item.name);
+            listEl.appendChild(card);
+
+            // 2. 建立地圖標記
+            const marker = L.marker([item.lat, item.lng]).addTo(map).bindPopup(`<b>${item.name}</b>`);
+            markers.push(marker);
+            bounds.push([item.lat, item.lng]);
+        });
+
+        // 3. 自動縮放地圖以包含所有景點
+        if (bounds.length > 0) {
+            map.fitBounds(bounds, { padding: [50, 50] });
+        }
+    }
+
+    function focusLocation(lat, lng, name) {
+        map.flyTo([lat, lng], 15);
+        setTimeout(() => {
+            L.popup().setLatLng([lat, lng]).setContent(`<b>${name}</b>`).openOn(map);
+        }, 1000);
+    }
+</script>
+
 </body>
 </html>
