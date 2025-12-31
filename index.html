@@ -3,162 +3,119 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>台灣 AI 旅遊規畫系統 - 最終修復版</title>
+    <title>AI 旅遊規畫系統 - 修正版</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f3f4f6; }
-        #map { height: 500px; width: 100%; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        .marker-index { background: #2563eb; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border: 2px solid white; font-weight: bold; font-size: 12px; }
+        #map { height: 500px; width: 100%; border-radius: 12px; }
+        .marker-index { background: #e11d48; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid white; }
     </style>
 </head>
-<body class="p-4">
-    <div class="max-w-6xl mx-auto">
-        <header class="mb-6">
-            <h1 class="text-3xl font-bold text-gray-800">台灣 AI 智慧旅遊規畫</h1>
-            <p class="text-blue-600">API 狀態：連線正常 ✅</p>
-        </header>
+<body class="bg-slate-50 p-6">
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div class="lg:col-span-4 space-y-4">
-                <div class="bg-white p-5 rounded-xl shadow">
-                    <label class="block text-sm font-bold text-gray-700 mb-2">1. API Key (已儲存)</label>
-                    <input type="password" id="apiKey" value="AIzaSyD1wo67sEiVujXhIRtGTJ3l2WyipxTImwk" class="w-full border p-2 rounded bg-gray-50 text-gray-500" readonly>
-                    
-                    <label class="block text-sm font-bold text-gray-700 mt-4 mb-2">2. 輸入旅程需求</label>
-                    <input type="text" id="destination" placeholder="例如：花蓮太魯閣一日遊" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none">
-                    
-                    <button onclick="generateTrip()" id="btn" class="w-full mt-4 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition shadow-lg">
-                        開始生成 AI 行程
-                    </button>
-                </div>
-
-                <div id="itinerary" class="bg-white p-5 rounded-xl shadow hidden h-96 overflow-y-auto">
-                    <h2 class="font-bold border-b pb-2 mb-3">建議行程路線</h2>
-                    <div id="route-list" class="space-y-3"></div>
-                </div>
+    <div class="max-w-5xl mx-auto space-y-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h1 class="text-2xl font-bold mb-4 text-slate-800">📍 台灣 AI 行程規畫</h1>
+            <div class="flex gap-3">
+                <input type="text" id="destination" placeholder="例如：台南美食一日遊" class="flex-1 border p-3 rounded-xl outline-none focus:ring-2 focus:ring-rose-500">
+                <button id="generateBtn" class="bg-rose-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-rose-600 transition">生成行程</button>
             </div>
+            <input type="hidden" id="apiKey" value="AIzaSyD1wo67sEiVujXhIRtGTJ3l2WyipxTImwk">
+        </div>
 
-            <div class="lg:col-span-8 bg-white p-2 rounded-xl shadow">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div id="itinerary" class="lg:col-span-1 space-y-3 hidden h-[500px] overflow-y-auto"></div>
+            <div class="lg:col-span-2">
                 <div id="map"></div>
             </div>
         </div>
     </div>
 
-    <button id="btn" class="w-full mt-4 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition shadow-lg">
-    開始生成 AI 行程
-</button>
+    <script>
+        // 初始化地圖
+        const map = L.map('map').setView([23.5, 121], 7);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        let markers = L.layerGroup().addTo(map);
+        let routeLine = null;
 
-<script>
-    // 1. 先初始化地圖 (確保全域變數可用)
-    const map = L.map('map').setView([23.9739, 120.9796], 7);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    let markers = L.layerGroup().addTo(map);
-    let polyline = null;
+        // 使用 addEventListener 避免 HTML onclick 找不到函數的問題
+        document.getElementById('generateBtn').addEventListener('click', async function() {
+            const key = document.getElementById('apiKey').value;
+            const dest = document.getElementById('destination').value;
+            const btn = this;
 
-    // 2. 定義生成行程的 async 函數
-   // 宣告時務必包含 async
-async function generateTrip() {
-    try {
-        const key = document.getElementById('apiKey').value;
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+            if (!dest) return alert("請輸入目的地");
 
-        // 這裡的 await 才能正常運作
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: "你好" }] }] })
+            btn.disabled = true;
+            btn.innerText = "規劃中...";
+
+            // 使用 v1beta 端點與正確的模型路徑
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: `你是一位台灣導遊。請規劃「${dest}」。請嚴格回傳 JSON 陣列格式，不要包含 Markdown 標籤。格式：[{"name":"景點名稱","lat":緯度,"lng":經度,"desc":"簡介"}]` }] }]
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error?.message || "API 請求失敗");
+                }
+
+                let text = data.candidates[0].content.parts[0].text;
+                // 清理 AI 可能附帶的 Markdown 語法
+                text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+                
+                const locations = JSON.parse(text);
+                renderMap(locations);
+
+            } catch (error) {
+                console.error(error);
+                alert("錯誤：" + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "生成行程";
+            }
         });
 
-        const data = await response.json();
-        console.log(data);
-    } catch (e) {
-        console.error("執行出錯:", e);
-    }
-}
+        function renderMap(locations) {
+            markers.clearLayers();
+            if (routeLine) map.removeLayer(routeLine);
+            const listContainer = document.getElementById('itinerary');
+            listContainer.innerHTML = "";
+            listContainer.classList.remove('hidden');
 
-// 建議：使用這種方式綁定按鈕，避免 HTML onclick 找不到函數
-document.getElementById('btn').addEventListener('click', generateTrip);
-    btn.disabled = true;
-    btn.innerText = "正在連線...";
+            const latlngs = [];
+            const bounds = L.latLngBounds();
 
-    // 💡 修正點：使用 v1 穩定版，並確保結尾是 :generateContent
-    // 如果 v1 還是 404，請改回 v1beta
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent?key=${key}`;
+            locations.forEach((loc, i) => {
+                const pos = [loc.lat, loc.lng];
+                latlngs.push(pos);
+                bounds.extend(pos);
 
-    try {
-        const response = await fetch(`${baseUrl}?key=${key}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{ text: `你是一位台灣旅遊專家，請規劃「${dest}」。請回傳 JSON 格式陣列，格式為：[{"name":"地點","lat":25.0,"lng":121.5,"desc":"描述"}]。不要包含任何 Markdown 語法或多餘文字。` }]
-                }]
-            })
-        });
+                // 添加地圖標記
+                L.marker(pos, {
+                    icon: L.divIcon({ className: '', html: `<div class="marker-index">${i+1}</div>`, iconSize: [24, 24] })
+                }).bindPopup(`<b>${loc.name}</b><br>${loc.desc}`).addTo(markers);
 
-        const data = await response.json();
+                // 添加側邊列表
+                const item = document.createElement('div');
+                item.className = "bg-white p-4 rounded-xl shadow-sm border border-slate-100 cursor-pointer hover:bg-slate-50 transition";
+                item.innerHTML = `<h3 class="font-bold text-slate-800">${i+1}. ${loc.name}</h3><p class="text-xs text-slate-500 mt-1">${loc.desc}</p>`;
+                item.onclick = () => map.flyTo(pos, 15);
+                listContainer.appendChild(item);
+            });
 
-        if (!response.ok) {
-            // 這裡會顯示具體的錯誤原因 (例如專案未對齊或權限不足)
-            throw new Error(`API 報錯 (${response.status}): ${data.error?.message || '未知錯誤'}`);
+            // 畫出連線
+            routeLine = L.polyline(latlngs, { color: '#e11d48', weight: 3, dashArray: '5, 10' }).addTo(map);
+            map.fitBounds(bounds, { padding: [50, 50] });
         }
-
-        // 解析 AI 回傳的內容
-        let text = data.candidates[0].content.parts[0].text;
-        // 移除可能存在的 Markdown 標籤
-        text = text.replace(/```json/g, "").replace(/```/g, "").trim();
-        
-        const locations = JSON.parse(text);
-        renderMapAndList(locations);
-
-    } catch (error) {
-        console.error("詳細錯誤資訊：", error);
-        alert("⚠️ 生成失敗：\n" + error.message);
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "開始生成 AI 行程";
-    }
-}
-    
-    // 3. 渲染地圖與列表的函數
-    function renderMapAndList(locations) {
-        markers.clearLayers();
-        if (polyline) map.removeLayer(polyline);
-        const listEl = document.getElementById('route-list');
-        document.getElementById('itinerary').classList.remove('hidden');
-        listEl.innerHTML = "";
-
-        const points = [];
-        const bounds = L.latLngBounds();
-
-        locations.forEach((loc, i) => {
-            const pos = [loc.lat, loc.lng];
-            points.push(pos);
-            bounds.extend(pos);
-
-            const marker = L.marker(pos, {
-                icon: L.divIcon({ className: '', html: `<div class="marker-index" style="background: #2563eb; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border: 2px solid white; font-weight: bold; font-size: 12px;">${i+1}</div>`, iconSize: [24, 24] })
-            }).bindPopup(`<b>${loc.name}</b><br>${loc.desc}`).addTo(markers);
-
-            const item = document.createElement('div');
-            item.className = "p-3 border rounded-lg hover:bg-blue-50 cursor-pointer mb-2 transition";
-            item.innerHTML = `<h3 class="font-bold text-sm text-blue-800">${i+1}. ${loc.name}</h3><p class="text-xs text-gray-500">${loc.desc}</p>`;
-            item.onclick = () => { map.flyTo(pos, 15); marker.openPopup(); };
-            listEl.appendChild(item);
-        });
-
-        polyline = L.polyline(points, { color: '#2563eb', weight: 3, dashArray: '5, 8', opacity: 0.7 }).addTo(map);
-        map.fitBounds(bounds, { padding: [50, 50] });
-    }
-
-    // 4. 事件綁定 (推薦使用 addEventListener 取代 onclick)
-    document.addEventListener('DOMContentLoaded', () => {
-        const btn = document.getElementById('btn');
-        btn.addEventListener('click', generateTrip);
-    });
-</script>
+    </script>
 </body>
 </html>
