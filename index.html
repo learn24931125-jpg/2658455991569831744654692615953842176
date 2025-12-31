@@ -3,35 +3,43 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>AI 旅遊助理 - 穩定版 (含雨天備案)</title>
+    <title>AI 智慧導航 - Gemini 2.0 Flash 版</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
     <style>
-        :root { --primary: #2c3e50; --accent: #3498db; --rain: #607d8b; }
-        body { font-family: "Microsoft JhengHei", sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background: #fdfdfd; }
-        header { background: var(--primary); color: white; padding: 15px; text-align: center; }
-        .main-ui { display: flex; flex: 1; overflow: hidden; }
-        #sidebar { width: 380px; padding: 20px; background: white; box-shadow: 2px 0 10px rgba(0,0,0,0.1); overflow-y: auto; }
-        input, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #ddd; }
-        button { background: var(--accent); color: white; border: none; font-weight: bold; cursor: pointer; }
-        .trip-card { border-left: 5px solid var(--accent); background: #f9f9f9; padding: 15px; margin-bottom: 15px; border-radius: 4px; }
-        .rain-alert { background: #e1f5fe; border-left-color: var(--rain); }
-        .weather-chip { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.8rem; background: #eee; margin-top: 5px; }
+        :root { --primary: #1a1a1a; --accent: #00d2ff; --rain: #607d8b; }
+        body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background: #f0f2f5; }
+        header { background: var(--primary); color: white; padding: 15px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+        #sidebar { width: 380px; padding: 20px; background: white; box-shadow: 2px 0 15px rgba(0,0,0,0.1); overflow-y: auto; z-index: 10; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #444; }
+        input, button { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
+        button { background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%); color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; transition: transform 0.2s; }
+        button:active { transform: scale(0.98); }
+        #status { margin: 10px 0; font-size: 0.85rem; padding: 10px; border-radius: 5px; background: #eef2f7; min-height: 40px; }
+        .trip-card { border-left: 5px solid var(--accent); background: #fff; padding: 15px; margin-bottom: 15px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .rain-mode { border-left-color: #546e7a; background: #eceff1; }
+        .weather-info { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-weight: bold; color: #555; font-size: 0.9rem; }
         #map { flex: 1; }
     </style>
 </head>
 <body>
 
-<header>🌤️ AI 避雨導航助理 (Gemini 1.5 Flash 穩定版)</header>
+<header>🚀 AI 旅遊助理 (Gemini 2.0 Flash 引擎)</header>
 
-<div class="main-ui">
+<div class="main-container">
     <aside id="sidebar">
-        <label><b>API Key</b></label>
-        <input type="password" id="api-key" placeholder="貼上您的 API Key">
-        <label><b>目的地與時間</b></label>
-        <input type="text" id="user-prompt" placeholder="例如：明天去陽明山玩" value="本週末去宜蘭玩">
-        <button onclick="smartPlan()">🚀 規劃避雨行程</button>
-        <div id="status" style="font-size: 0.85rem; color: #666; margin: 10px 0;">系統就緒</div>
+        <div class="input-group">
+            <label>Gemini API Key</label>
+            <input type="password" id="api-key" placeholder="貼上 API Key">
+        </div>
+        <div class="input-group">
+            <label>目的地與時間</label>
+            <input type="text" id="user-prompt" placeholder="例如：這週末去台中看展覽" value="這週末去台南玩">
+        </div>
+        <button onclick="startAiTrip()">🌍 啟動 2.0 Flash 規劃</button>
+        <div id="status">準備就緒</div>
         <div id="itinerary-list"></div>
     </aside>
     <div id="map"></div>
@@ -45,53 +53,49 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     let routingControl = null;
 
-    // 天氣轉換
-    const weatherIcon = (code) => {
-        if ([0, 1].includes(code)) return "☀️ 晴朗";
-        if ([2, 3].includes(code)) return "☁️ 陰天";
-        if ([51, 61, 80, 95].includes(code)) return "🌧️ 雨天(需備案)";
-        return "⛅ 多雲";
+    const getWeatherLabel = (code) => {
+        const codes = { 0: "☀️ 晴朗", 1: "🌤️ 多雲時晴", 2: "⛅ 多雲", 3: "☁️ 陰天", 45: "🌫️ 有霧", 61: "🌧️ 小雨", 95: "⛈️ 雷陣雨" };
+        return codes[code] || "⛅ 多雲";
     };
 
-    async function smartPlan() {
+    async function startAiTrip() {
         const key = document.getElementById('api-key').value.trim();
         const prompt = document.getElementById('user-prompt').value.trim();
         const status = document.getElementById('status');
-        const listContainer = document.getElementById('itinerary-list');
+        const list = document.getElementById('itinerary-list');
 
         if (!key) return alert("請輸入 API Key");
         
-        status.innerHTML = "📡 正在確認目的地天氣預報...";
-        listContainer.innerHTML = "";
+        status.innerHTML = "⏳ 正在定位目的地並獲取 Open-Meteo 天氣...";
+        list.innerHTML = "";
 
         try {
-            // 1. 預抓地區座標 (以目的地中心點為例)
+            // 1. 地理編碼定位
             const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(prompt)}&format=json&limit=1`);
             const geoData = await geoRes.json();
-            const lat = geoData[0]?.lat || 25.03;
-            const lng = geoData[0]?.lon || 121.56;
+            if (!geoData[0]) throw new Error("找不到該地點，請輸入更具體的名字");
+            const { lat, lon: lng } = geoData[0];
 
-            // 2. 獲取未來 7 天天氣 (Open-Meteo)
+            // 2. 獲取天氣預報
             const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=weathercode,temperature_2m_max&timezone=auto`);
             const weatherData = await weatherRes.json();
-            const todayIndex = 0; // 簡化：先看今日/明日
-            const isRaining = [51, 61, 80, 95].includes(weatherData.daily.weathercode[todayIndex]);
+            const rainCode = weatherData.daily.weathercode[0]; 
+            const isRainy = [51, 61, 80, 95].includes(rainCode);
+            const localWeather = getWeatherLabel(rainCode);
 
-            status.innerHTML = `🌡️ 當地預報：${weatherIcon(weatherData.daily.weathercode[todayIndex])}。正在由 AI 調整行程...`;
+            status.innerHTML = `🧬 Gemini 2.0 運算中... (預報：${localWeather})`;
 
-            // 3. 呼叫 Gemini (使用最新路徑格式避免 404)
-            // 修正路徑：使用 models/gemini-1.5-flash-latest
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${key}`;
-            
-            const sysMsg = `你是一位導遊。請規劃3個景點。
-            注意：當地預報為 ${isRaining ? '雨天' : '晴天'}。
-            ${isRaining ? '請「務必」推薦室內景點、博物館或觀光工廠作為雨天備案。' : '請推薦戶外自然景點為主。'}
-            嚴格回傳JSON陣列：[{"name":"名稱","type":"indoor|outdoor","lat":25.0,"lng":121.0,"desc":"介紹"}]`;
+            // 3. 呼叫 Gemini 2.0 Flash
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+            const sysPrompt = `你是一位專業導遊。請規劃3個景點。
+            當前天氣預報：${localWeather}。
+            ${isRainy ? '由於預測下雨，請優先推薦室內景點（如博物館、商場、工廠）。' : '天氣良好，請推薦戶外活動或自然景觀。'}
+            嚴格回傳 JSON 陣列：[{"name":"名稱","type":"indoor|outdoor","lat":25.0,"lng":121.0,"desc":"介紹"}]`;
 
             const aiRes = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: `${sysMsg}\n需求：${prompt}` }] }] })
+                body: JSON.stringify({ contents: [{ parts: [{ text: `${sysPrompt}\n需求：${prompt}` }] }] })
             });
 
             const aiData = await aiRes.json();
@@ -99,33 +103,34 @@
 
             const locations = JSON.parse(aiData.candidates[0].content.parts[0].text.match(/\[[\s\S]*\]/)[0]);
 
-            // 4. 渲染結果
+            // 4. 渲染 UI
             locations.forEach(loc => {
                 const card = document.createElement('div');
-                card.className = `trip-card ${isRaining && loc.type === 'indoor' ? 'rain-alert' : ''}`;
+                card.className = `trip-card ${isRainy && loc.type === 'indoor' ? 'rain-mode' : ''}`;
                 card.innerHTML = `
-                    <strong>${loc.name}</strong> [${loc.type === 'indoor' ? '室內' : '戶外'}]<br>
-                    <small>${loc.desc}</small><br>
-                    <div class="weather-chip">當地預測：${weatherIcon(weatherData.daily.weathercode[todayIndex])}</div>
+                    <strong>${loc.name}</strong> <span style="font-size:0.7rem; color:#888;">${loc.type === 'indoor' ? '🏠 室內' : '🌳 戶外'}</span><br>
+                    <small style="color:#555;">${loc.desc}</small>
+                    <div class="weather-info">預報: ${localWeather} | ${weatherData.daily.temperature_2m_max[0]}°C</div>
                 `;
-                listContainer.appendChild(card);
+                list.appendChild(card);
             });
 
-            renderRoute(locations);
-            status.innerHTML = `✅ 已根據天氣完成規劃 (${isRaining ? '已啟動雨天備案' : '戶外行程'})`;
+            drawMapRoute(locations);
+            status.innerHTML = `✅ 規劃完成！(模型：Gemini 2.0 Flash)`;
 
         } catch (e) {
-            status.innerHTML = `❌ 系統錯誤：${e.message}`;
+            status.innerHTML = `❌ 錯誤：${e.message}`;
             console.error(e);
         }
     }
 
-    function renderRoute(locations) {
+    function drawMapRoute(locations) {
         if (routingControl) map.removeControl(routingControl);
         const wps = locations.map(l => L.latLng(l.lat, l.lng));
         routingControl = L.Routing.control({
             waypoints: wps,
-            createMarker: (i, wp) => L.marker(wp.latLng).bindPopup(locations[i].name)
+            routeWhileDragging: false,
+            createMarker: (i, wp) => L.marker(wp.latLng).bindPopup(`<b>${locations[i].name}</b>`)
         }).addTo(map);
         map.fitBounds(L.latLngBounds(wps), { padding: [50, 50] });
     }
