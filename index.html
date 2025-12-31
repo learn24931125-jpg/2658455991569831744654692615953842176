@@ -80,7 +80,7 @@
         status.style.background = "#eef9ff";
 
         // 正式版 v1 URL
-        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
         const systemMsg = "你是一位台灣導遊。請規劃3個景點與2個美食。嚴格回傳JSON陣列，不要Markdown標籤，不要解釋。格式：[{\"name\":\"名稱\",\"type\":\"attraction|food\",\"lat\":23.0,\"lng\":120.0,\"desc\":\"介紹\"}]";
 
