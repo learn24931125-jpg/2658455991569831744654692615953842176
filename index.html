@@ -47,138 +47,118 @@
         </div>
     </div>
 
-    <script>
-        // 初始化地圖
-        const map = L.map('map').setView([23.9739, 120.9796], 7);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        let markers = L.layerGroup().addTo(map);
-        let polyline = null;
+    <button id="btn" class="w-full mt-4 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition shadow-lg">
+    開始生成 AI 行程
+</button>
 
-      async function generateTrip() {
-    const key = document.getElementById('apiKey').value;
-    const dest = document.getElementById('destination').value;
-    const btn = document.getElementById('btn');
-    
-    if (!dest) return alert("請輸入目的地！");
+<script>
+    // 1. 先初始化地圖 (確保全域變數可用)
+    const map = L.map('map').setView([23.9739, 120.9796], 7);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    let markers = L.layerGroup().addTo(map);
+    let polyline = null;
 
-    btn.disabled = true;
-    btn.innerText = "AI 正在計算路線...";
-
-    // 定義可能的模型名稱順序，解決 404 問題
-    const modelOptions = [
-        "gemini-1.5-flash",
-        "gemini-1.5-flash-latest",
-        "gemini-pro"
-    ];
-
-    let success = false;
-    let errorMessage = "";
-
-    for (let modelName of modelOptions) {
-        if (success) break;
+    // 2. 定義生成行程的 async 函數
+    async function generateTrip() {
+        const key = document.getElementById('apiKey').value;
+        const dest = document.getElementById('destination').value;
+        const btn = document.getElementById('btn');
         
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key}`;
-        
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: `你是一位專業導遊。請以 JSON 格式規劃台灣「${dest}」。格式：[{"name":"名稱","lat":25.0,"lng":121.5,"desc":"簡介"}]` }] }] })
-            });
-
-            const data = await response.json();
-            
-            if (response.ok && data.candidates) {
-                let rawText = data.candidates[0].content.parts[0].text;
-                const cleanJson = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
-                const locations = JSON.parse(cleanJson);
-                renderMapAndList(locations);
-                success = true;
-                console.log(`使用模型成功: ${modelName}`);
-            } else {
-                errorMessage = data.error?.message || "未知錯誤";
-                console.warn(`模型 ${modelName} 嘗試失敗: ${errorMessage}`);
-            }
-        } catch (error) {
-            errorMessage = error.message;
+        if (!dest) {
+            alert("請輸入目的地！");
+            return;
         }
-    }
 
-    if (!success) {
-        alert("所有模型皆無法調用，請確認您在 Google AI Studio 介面左側是否有看到 gemini-1.5-flash 模型可選。錯誤訊息：" + errorMessage);
-    }
+        btn.disabled = true;
+        btn.innerText = "AI 正在計算路線...";
 
-    btn.disabled = false;
-    btn.innerText = "開始生成 AI 行程";
-}
+        // 嘗試不同的模型名稱 (優先嘗試 1.5-flash)
+        const modelOptions = [
+            "gemini-1.5-flash",
+            "gemini-1.5-flash-latest",
+            "gemini-pro"
+        ];
 
-            // 使用經測試正確的 API 端點
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+        let success = false;
+        let lastError = "";
 
-            const prompt = `你是一位專業導遊。請規劃「${dest}」。
-            要求：
-            1. 僅回傳 JSON 陣列格式。
-            2. 格式範例：[{"name":"景點A","lat":25.0,"lng":121.5,"desc":"簡介"}]
-            3. 地點須在台灣境內。`;
-
+        for (let modelName of modelOptions) {
+            if (success) break;
+            
+            console.log(`正在嘗試使用模型: ${modelName}`);
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key}`;
+            
             try {
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: `你是一位台灣旅遊專家。請以繁體中文規劃「${dest}」。請嚴格回傳 JSON 陣列格式，不要 Markdown 標籤，格式：[{"name":"地點名稱","lat":25.0,"lng":121.5,"desc":"描述"}]` }] }]
+                    })
                 });
 
                 const data = await response.json();
                 
-                if (!response.ok) throw new Error(data.error?.message || "API 調用失敗");
-
-                let rawText = data.candidates[0].content.parts[0].text;
-                // 強制清理 Markdown 語法 (常見的 AI 錯誤回傳格式)
-                const cleanJson = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
-                const locations = JSON.parse(cleanJson);
-
-                renderMapAndList(locations);
+                if (response.ok && data.candidates && data.candidates[0].content) {
+                    let rawText = data.candidates[0].content.parts[0].text;
+                    const cleanJson = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
+                    const locations = JSON.parse(cleanJson);
+                    
+                    renderMapAndList(locations);
+                    success = true;
+                    console.log("生成成功！");
+                } else {
+                    lastError = data.error?.message || "未知模型錯誤";
+                }
             } catch (error) {
-                console.error(error);
-                alert("生成失敗：" + error.message);
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "開始生成 AI 行程";
+                lastError = error.message;
             }
         }
 
-        function renderMapAndList(locations) {
-            markers.clearLayers();
-            if (polyline) map.removeLayer(polyline);
-            const listEl = document.getElementById('route-list');
-            document.getElementById('itinerary').classList.remove('hidden');
-            listEl.innerHTML = "";
-
-            const points = [];
-            const bounds = L.latLngBounds();
-
-            locations.forEach((loc, i) => {
-                const pos = [loc.lat, loc.lng];
-                points.push(pos);
-                bounds.extend(pos);
-
-                // 添加地圖標記
-                const marker = L.marker(pos, {
-                    icon: L.divIcon({ className: '', html: `<div class="marker-index">${i+1}</div>`, iconSize: [24, 24] })
-                }).bindPopup(`<b>${loc.name}</b><br>${loc.desc}`).addTo(markers);
-
-                // 添加左側列表項目
-                const item = document.createElement('div');
-                item.className = "p-3 border rounded-lg hover:bg-blue-50 cursor-pointer transition";
-                item.innerHTML = `<h3 class="font-bold text-sm text-blue-800">${i+1}. ${loc.name}</h3><p class="text-xs text-gray-500">${loc.desc}</p>`;
-                item.onclick = () => { map.flyTo(pos, 15); marker.openPopup(); };
-                listEl.appendChild(item);
-            });
-
-            // 畫出導航連線
-            polyline = L.polyline(points, { color: '#2563eb', weight: 3, dashArray: '5, 8', opacity: 0.7 }).addTo(map);
-            map.fitBounds(bounds, { padding: [50, 50] });
+        if (!success) {
+            alert("生成失敗。可能是 API Key 權限問題或模型名稱不匹配。\n最後一個錯誤訊息: " + lastError);
         }
-    </script>
+
+        btn.disabled = false;
+        btn.innerText = "開始生成 AI 行程";
+    }
+
+    // 3. 渲染地圖與列表的函數
+    function renderMapAndList(locations) {
+        markers.clearLayers();
+        if (polyline) map.removeLayer(polyline);
+        const listEl = document.getElementById('route-list');
+        document.getElementById('itinerary').classList.remove('hidden');
+        listEl.innerHTML = "";
+
+        const points = [];
+        const bounds = L.latLngBounds();
+
+        locations.forEach((loc, i) => {
+            const pos = [loc.lat, loc.lng];
+            points.push(pos);
+            bounds.extend(pos);
+
+            const marker = L.marker(pos, {
+                icon: L.divIcon({ className: '', html: `<div class="marker-index" style="background: #2563eb; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border: 2px solid white; font-weight: bold; font-size: 12px;">${i+1}</div>`, iconSize: [24, 24] })
+            }).bindPopup(`<b>${loc.name}</b><br>${loc.desc}`).addTo(markers);
+
+            const item = document.createElement('div');
+            item.className = "p-3 border rounded-lg hover:bg-blue-50 cursor-pointer mb-2 transition";
+            item.innerHTML = `<h3 class="font-bold text-sm text-blue-800">${i+1}. ${loc.name}</h3><p class="text-xs text-gray-500">${loc.desc}</p>`;
+            item.onclick = () => { map.flyTo(pos, 15); marker.openPopup(); };
+            listEl.appendChild(item);
+        });
+
+        polyline = L.polyline(points, { color: '#2563eb', weight: 3, dashArray: '5, 8', opacity: 0.7 }).addTo(map);
+        map.fitBounds(bounds, { padding: [50, 50] });
+    }
+
+    // 4. 事件綁定 (推薦使用 addEventListener 取代 onclick)
+    document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('btn');
+        btn.addEventListener('click', generateTrip);
+    });
+</script>
 </body>
 </html>
