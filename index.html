@@ -194,51 +194,47 @@
 
     output.innerHTML = `<p class="loading-spinner">Gemini 正在規劃中... ⏳</p>`;
 
-    // 系統指令：確保回傳 JSON
+    // 1. 在 Prompt 中再次強調 JSON，作為雙重保險
     const systemInstruction = `你是一位專業的台灣導遊。請用繁體中文回答。
-    請始終以 JSON 格式回傳，格式如下：
+    必須回傳 JSON 格式，內容包含：
     {
       "itinerary": [
         { "time": "時間", "spot": "景點名稱", "desc": "描述", "lat": 緯度數字, "lng": 經度數字 }
       ],
-      "note": "額外提醒"
+      "note": "建議"
     }`;
 
-    // 構建對話歷史
     if (chatHistory.length === 0) {
-        chatHistory.push({ role: "user", parts: [{ text: `${systemInstruction}\n現在我想去${city}，需求是：${pref}` }] });
+        chatHistory.push({ role: "user", parts: [{ text: `${systemInstruction}\n目的地：${city}\n需求：${pref}` }] });
     } else {
         chatHistory.push({ role: "user", parts: [{ text: pref }] });
     }
 
     try {
-        // --- 修正後的網址格式 ---
-        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        // --- 使用 v1beta 網址，這是目前支援 JSON Mode 最穩定的路徑 ---
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: chatHistory,
-                // 加入此設定以確保 JSON 格式輸出
-                generationConfig: { 
-                    response_mime_type: "application/json", 
-                    temperature: 0.7 
+                generationConfig: {
+                    // 注意：在 v1beta 中，這個欄位是用來強制輸出的
+                    responseMimeType: "application/json", 
+                    temperature: 0.7
                 }
             })
         });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error.message || "API 請求失敗");
+        const data = await response.json();
+
+        if (data.error) {
+            // 如果還是報錯，嘗試移除 responseMimeType 再發送一次（相容性墊片）
+            throw new Error(data.error.message);
         }
 
-        const data = await response.json();
-        
-        // 取得 AI 回傳內容
         const aiText = data.candidates[0].content.parts[0].text;
-        
-        // 將 AI 回答加入歷史紀錄
         chatHistory.push({ role: "model", parts: [{ text: aiText }] });
         
         renderResults(JSON.parse(aiText));
@@ -246,7 +242,7 @@
 
     } catch (error) {
         console.error(error);
-        output.innerHTML = `<p style="color:red">錯誤：${error.message}<br><small>請確認您的 API Key 是否已啟用 Gemini API 權限</small></p>`;
+        output.innerHTML = `<p style="color:red">系統異常：${error.message}<br><small>提示：請確認 API Key 是否正確且具備 Gemini 1.5 權限。</small></p>`;
     }
 }
 
