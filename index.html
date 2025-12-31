@@ -4,46 +4,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 台灣導航系統 - 2025 正式版</title>
-    
+    <title>AI 台灣導航系統 - 穩定修復版</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
-    
     <style>
         :root { --primary: #2c3e50; --accent: #e67e22; --info: #3498db; }
-        body { font-family: "Microsoft JhengHei", sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background: #f4f7f6; }
+        body { font-family: "Microsoft JhengHei", sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
         header { background: var(--primary); color: white; padding: 15px; text-align: center; }
         .main-container { display: flex; flex: 1; overflow: hidden; }
-        #sidebar { width: 360px; background: white; padding: 20px; box-shadow: 2px 0 10px rgba(0,0,0,0.1); overflow-y: auto; z-index: 1000; }
-        .input-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-weight: bold; color: #34495e; }
-        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; background: var(--info); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.3s; }
-        button:hover { background: #2980b9; }
-        button:disabled { background: #bdc3c7; cursor: not-allowed; }
-        #status { margin-top: 20px; padding: 15px; border-radius: 8px; font-size: 0.9rem; line-height: 1.6; background: #f9f9f9; border: 1px solid #eee; }
+        #sidebar { width: 350px; background: white; padding: 20px; box-shadow: 2px 0 10px rgba(0,0,0,0.1); overflow-y: auto; }
+        input, button { width: 100%; padding: 12px; margin-top: 10px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
+        button { background: var(--info); color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:disabled { background: #ccc; }
+        #status { margin-top: 20px; padding: 15px; border-radius: 8px; font-size: 0.85rem; background: #f8f9fa; border: 1px solid #eee; white-space: pre-wrap; }
         #map { flex: 1; }
-        .leaflet-routing-container { width: 280px !important; background: rgba(255,255,255,0.95); box-shadow: 0 0 10px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
 
-<header>
-    <h1>🇹🇼 AI 台灣精確導航規劃</h1>
-</header>
+<header><h1>🇹🇼 AI 台灣行程導航 (穩定版)</h1></header>
 
 <div class="main-container">
     <aside id="sidebar">
-        <div class="input-group">
-            <label>1. Gemini API Key (AI Studio)</label>
-            <input type="password" id="api-key" placeholder="貼上 AI Studio 申請的 Key...">
-        </div>
-        <div class="input-group">
-            <label>2. 旅遊目的地與需求</label>
-            <input type="text" id="user-prompt" placeholder="例如：台南中西區古蹟美食一日遊">
-        </div>
-        <button id="plan-btn" onclick="runApp()">✨ 開始規劃導航行程</button>
-        <div id="status">系統準備就緒。</div>
+        <label>1. Gemini API Key</label>
+        <input type="password" id="api-key" placeholder="貼上 AI Studio Key...">
+        <label>2. 旅遊目的地</label>
+        <input type="text" id="user-prompt" placeholder="例如：台南美食一日遊">
+        <button id="plan-btn" onclick="runApp()">開始規劃</button>
+        <div id="status">準備就緒。</div>
     </aside>
     <div id="map"></div>
 </div>
@@ -52,12 +40,11 @@
 <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
 
 <script>
-    // 1. 初始化地圖
     const map = L.map('map').setView([23.6, 121.0], 7);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' }).addTo(map);
     let routingControl = null;
 
-    // 2. 座標修正 (Nominatim)
+    // 校正座標函數
     async function getPreciseCoords(name) {
         try {
             const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(name)}&format=json&limit=1`);
@@ -66,7 +53,6 @@
         } catch (e) { return null; }
     }
 
-    // 3. 主應用流程
     async function runApp() {
         const apiKey = document.getElementById('api-key').value.trim();
         const userPrompt = document.getElementById('user-prompt').value.trim();
@@ -76,76 +62,68 @@
         if (!apiKey || !userPrompt) return alert("請填寫所有欄位");
 
         btn.disabled = true;
-        status.innerHTML = "🧬 Step 1: Gemini 正在構思行程...";
-        status.style.background = "#eef9ff";
+        status.innerHTML = "🧬 正在測試模型連線...";
 
-        // 正式版 v1 URL
+        // 嘗試使用最新模型名稱格式
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-        const systemMsg = "你是一位台灣導遊。請規劃3個景點與2個美食。嚴格回傳JSON陣列，不要Markdown標籤，不要解釋。格式：[{\"name\":\"名稱\",\"type\":\"attraction|food\",\"lat\":23.0,\"lng\":120.0,\"desc\":\"介紹\"}]";
+        const systemMsg = "你是一位導遊。請規劃3個景點與2個美食。嚴格回傳JSON陣列，不要標籤，不要解釋。格式：[{\"name\":\"名稱\",\"type\":\"attraction|food\",\"lat\":23.0,\"lng\":120.0,\"desc\":\"介紹\"}]";
 
         try {
-            // AI 請求
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    contents: [{ parts: [{ text: `${systemMsg}\n需求：${userPrompt}` }] }]
+                    contents: [{ parts: [{ text: `${systemMsg}\n需求：${userPrompt}` }] }],
+                    generationConfig: { temperature: 0.7, maxOutputTokens: 1000 }
                 })
             });
 
+            const resData = await response.json();
+
+            // 如果報錯，抓取錯誤清單
             if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.error?.message || "API 連線失敗");
+                console.error("API 原始回覆:", resData);
+                throw new Error(resData.error?.message || "未知錯誤");
             }
 
-            const data = await response.json();
-            const rawText = data.candidates[0].content.parts[0].text;
-            const cleanJson = rawText.match(/\[[\s\S]*\]/)[0];
-            const locations = JSON.parse(cleanJson);
+            const rawText = resData.candidates[0].content.parts[0].text;
+            const jsonMatch = rawText.match(/\[[\s\S]*\]/);
+            if (!jsonMatch) throw new Error("AI 回傳格式有誤");
+            
+            const locations = JSON.parse(jsonMatch[0]);
 
-            // 座標校正
-            status.innerHTML = "🔍 Step 2: 正在精確校正 GPS 座標...";
+            status.innerHTML = "🔍 正在精確校正座標...";
             const corrected = await Promise.all(locations.map(async loc => {
                 const p = await getPreciseCoords(loc.name);
                 return p ? { ...loc, lat: p.lat, lng: p.lng } : loc;
             }));
 
-            // 渲染路線
             renderRoute(corrected);
-            status.innerHTML = `✅ 規劃完成！<br>已標記 ${locations.length} 個站點並優化導航路線。`;
-            status.style.background = "#e6fffa";
-
+            status.innerHTML = "✅ 行程產出成功！";
         } catch (error) {
-            console.error(error);
-            status.innerHTML = `❌ 錯誤：${error.message}`;
-            status.style.background = "#fff5f5";
+            status.innerHTML = `❌ 錯誤：${error.message}\n\n提示：若提示 model not found，請確認你在 AI Studio 中是否能正常使用 gemini-1.5-flash。`;
         } finally {
             btn.disabled = false;
         }
     }
 
-    // 4. 地圖渲染
     function renderRoute(locations) {
         if (routingControl) map.removeControl(routingControl);
         const waypoints = locations.map(loc => L.latLng(loc.lat, loc.lng));
-
         routingControl = L.Routing.control({
             waypoints: waypoints,
             language: 'zh',
-            lineOptions: { styles: [{ color: '#2c3e50', opacity: 0.8, weight: 6 }] },
             createMarker: function(i, wp) {
                 const loc = locations[i];
                 const color = loc.type === 'food' ? 'orange' : 'blue';
                 const icon = new L.Icon({
                     iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
-                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
                     iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
                 });
                 return L.marker(wp.latLng, { icon }).bindPopup(`<b>${loc.name}</b><br>${loc.desc}`);
             }
         }).addTo(map);
-
         map.fitBounds(L.latLngBounds(waypoints), { padding: [50, 50] });
     }
 </script>
