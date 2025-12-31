@@ -60,66 +60,52 @@
 
     // 2. 定義生成行程的 async 函數
    async function generateTrip() {
-    const key = document.getElementById('apiKey').value;
+    const key = document.getElementById('apiKey').value; // 請確保 Key 與啟用 API 的專案一致
     const dest = document.getElementById('destination').value;
     const btn = document.getElementById('btn');
-    
-    if (!dest) { alert("請輸入目的地！"); return; }
 
     btn.disabled = true;
-    btn.innerText = "AI 正在計算路線...";
+    btn.innerText = "正在連線...";
 
-    // 擴大嘗試範圍：包含 v1 與 v1beta 版本，以及不同模型寫法
-    const apiScenarios = [
-        { ver: 'v1beta', model: 'gemini-1.5-flash' },
-        { ver: 'v1', model: 'gemini-1.5-flash' },
-        { ver: 'v1beta', model: 'gemini-1.5-flash-latest' },
-        { ver: 'v1', model: 'gemini-pro' }
-    ];
+    // 💡 修正點：使用 v1 穩定版，並確保結尾是 :generateContent
+    // 如果 v1 還是 404，請改回 v1beta
+    const baseUrl = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent";
 
-    let success = false;
-    let lastError = "";
+    try {
+        const response = await fetch(`${baseUrl}?key=${key}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{ text: `你是一位台灣旅遊專家，請規劃「${dest}」。請回傳 JSON 格式陣列，格式為：[{"name":"地點","lat":25.0,"lng":121.5,"desc":"描述"}]。不要包含任何 Markdown 語法或多餘文字。` }]
+                }]
+            })
+        });
 
-    for (let scenario of apiScenarios) {
-        if (success) break;
-        
-        console.log(`正在測試端點: ${scenario.ver} 模型: ${scenario.model}`);
-        const url = `https://generativelanguage.googleapis.com/${scenario.ver}/models/${scenario.model}:generateContent?key=${key}`;
-        
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: `你是一位導遊，請規劃台灣「${dest}」。請回傳 JSON 陣列格式，如：[{"name":"地點","lat":25.0,"lng":121.5,"desc":"描述"}]。不要有其他文字。` }] }]
-                })
-            });
+        const data = await response.json();
 
-            const data = await response.json();
-            
-            if (response.ok && data.candidates) {
-                let rawText = data.candidates[0].content.parts[0].text;
-                const cleanJson = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
-                const locations = JSON.parse(cleanJson);
-                
-                renderMapAndList(locations);
-                success = true;
-                console.log("連線成功！使用的端點為：" + scenario.ver + "/" + scenario.model);
-            } else {
-                lastError = data.error?.message || "未知的 API 響應";
-            }
-        } catch (error) {
-            lastError = error.message;
+        if (!response.ok) {
+            // 這裡會顯示具體的錯誤原因 (例如專案未對齊或權限不足)
+            throw new Error(`API 報錯 (${response.status}): ${data.error?.message || '未知錯誤'}`);
         }
-    }
 
-    if (!success) {
-        alert("所有 API 版本皆回傳 404 或錯誤。\n原因可能是：\n1. 地區暫時性封鎖\n2. Key 的權限尚未完全同步 (請等待 5-10 分鐘)\n最後錯誤：" + lastError);
-    }
+        // 解析 AI 回傳的內容
+        let text = data.candidates[0].content.parts[0].text;
+        // 移除可能存在的 Markdown 標籤
+        text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+        
+        const locations = JSON.parse(text);
+        renderMapAndList(locations);
 
-    btn.disabled = false;
-    btn.innerText = "開始生成 AI 行程";
+    } catch (error) {
+        console.error("詳細錯誤資訊：", error);
+        alert("⚠️ 生成失敗：\n" + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "開始生成 AI 行程";
+    }
 }
+    
     // 3. 渲染地圖與列表的函數
     function renderMapAndList(locations) {
         markers.clearLayers();
