@@ -59,12 +59,11 @@
     let polyline = null;
 
     // 2. 定義生成行程的 async 函數
-   async function diagnoseModels(key) {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
-    const data = await res.json();
-    console.log("你的 Key 支援的模型清單：", data.models.map(m => m.name));
+   async function generateTrip() {
+    // 現在這裡可以安全使用 await
+    const response = await fetch(url); 
+    const data = await response.json();
 }
-
     btn.disabled = true;
     btn.innerText = "正在連線...";
 
