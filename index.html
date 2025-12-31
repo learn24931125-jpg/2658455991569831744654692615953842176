@@ -59,17 +59,18 @@
     let polyline = null;
 
     // 2. 定義生成行程的 async 函數
-   async function generateTrip() {
-    const key = document.getElementById('apiKey').value; // 請確保 Key 與啟用 API 的專案一致
-    const dest = document.getElementById('destination').value;
-    const btn = document.getElementById('btn');
+   async function diagnoseModels(key) {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+    const data = await res.json();
+    console.log("你的 Key 支援的模型清單：", data.models.map(m => m.name));
+}
 
     btn.disabled = true;
     btn.innerText = "正在連線...";
 
     // 💡 修正點：使用 v1 穩定版，並確保結尾是 :generateContent
     // 如果 v1 還是 404，請改回 v1beta
-    const baseUrl = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent";
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent?key=${key}`;
 
     try {
         const response = await fetch(`${baseUrl}?key=${key}`, {
