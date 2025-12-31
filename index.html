@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 台灣智慧旅遊導覽系統</title>
+    <title>AI 台灣智慧旅遊導覽系統 (Gemini 版)</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
@@ -18,11 +18,10 @@
         body, html {
             height: 100%;
             margin: 0;
-            font-family: "Microsoft JhengHei", sans-serif;
+            font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
             background-color: var(--bg);
         }
 
-        /* 佈局設計 */
         .app-container {
             display: flex;
             flex-direction: column;
@@ -43,9 +42,9 @@
             overflow: hidden;
         }
 
-        /* 側邊欄控制區 */
+        /* 側邊欄 */
         .sidebar {
-            width: 380px;
+            width: 400px;
             background: white;
             padding: 20px;
             display: flex;
@@ -60,7 +59,6 @@
             display: flex;
             flex-direction: column;
             gap: 5px;
-            margin-bottom: 10px;
         }
 
         input, select, textarea {
@@ -83,30 +81,38 @@
 
         button:hover { background: #2980b9; }
 
-        #ai-output {
-            margin-top: 20px;
-            font-size: 14px;
-            line-height: 1.6;
-        }
+        /* 行程顯示區樣式 */
+        #ai-output { margin-top: 20px; }
 
         .itinerary-item {
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .spot-img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            background: #f0f0f0;
+        }
+
+        .spot-info {
+            padding: 12px;
             border-left: 4px solid var(--accent);
-            padding: 10px;
-            background: #f1f7ff;
-            margin-bottom: 10px;
-            border-radius: 0 4px 4px 0;
         }
 
         /* 地圖區 */
-        #map {
-            flex: 1;
-            height: 100%;
-        }
+        #map { flex: 1; height: 100%; }
 
         .loading-spinner {
             color: var(--accent);
             font-weight: bold;
             text-align: center;
+            padding: 20px;
         }
     </style>
 </head>
@@ -120,8 +126,8 @@
     <div class="main-content">
         <div class="sidebar">
             <div class="input-group">
-                <label>🔑 OpenAI API Key</label>
-                <input type="password" id="api-key" placeholder="sk-...">
+                <label>🔑 Google AI (Gemini) API Key</label>
+                <input type="password" id="api-key" placeholder="AIza...">
             </div>
 
             <div class="input-group">
@@ -129,23 +135,23 @@
                 <select id="city">
                     <option value="台北">台北</option>
                     <option value="台中">台中</option>
-                    <option value="南投清境">南投</option>
                     <option value="台南">台南</option>
                     <option value="高雄">高雄</option>
+                    <option value="宜蘭">宜蘭</option>
                     <option value="花蓮">花蓮</option>
                 </select>
             </div>
 
             <div class="input-group">
-                <label>💬 告訴 AI 你的需求或修改建議</label>
-                <textarea id="preference" rows="4" placeholder="例如：我想去文青景點，下午要有下午茶。"></textarea>
+                <label>💬 您的旅遊偏好或修改需求</label>
+                <textarea id="preference" rows="4" placeholder="例如：我想去文青咖啡廳、看夕陽，不要太累的行程..."></textarea>
             </div>
 
-            <button onclick="generatePlan()">生成 / 修改行程</button>
+            <button onclick="generatePlan()">生成 / 修改 AI 行程</button>
             <button onclick="resetChat()" style="background:#95a5a6;">重設對話</button>
 
             <div id="ai-output">
-                <p style="color:#888; text-align:center;">請輸入 API Key 並描述您的需求以開始規劃。</p>
+                <p style="color:#888; text-align:center;">請輸入 API Key 並描述需求以開始規劃。</p>
             </div>
         </div>
 
@@ -157,112 +163,119 @@
 
 <script>
     let map;
-let markersLayer = L.layerGroup();
-let chatHistory = []; // Gemini 格式: { role: "user" | "model", parts: [{ text: "" }] }
+    let markersLayer = L.layerGroup();
+    let chatHistory = [];
 
-window.onload = function() {
-    map = L.map('map').setView([23.6, 121.0], 7);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
-    markersLayer.addTo(map);
-};
+    // 初始化地圖
+    window.onload = function() {
+        map = L.map('map').setView([23.6, 121.0], 7);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        markersLayer.addTo(map);
+    };
 
-async function generatePlan() {
-    const apiKey = document.getElementById('api-key').value.trim();
-    const city = document.getElementById('city').value;
-    const pref = document.getElementById('preference').value;
-    const output = document.getElementById('ai-output');
-
-    if (!apiKey) {
-        alert("請輸入 Google AI (Gemini) API Key！");
-        return;
+    // 自動獲取圖片網址 (使用 Unsplash 關鍵字)
+    function getPlaceImage(spotName) {
+        return `https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=400&q=80&sig=${encodeURIComponent(spotName)}`;
+        // 注意：Unsplash Source 服務有時較慢，此處使用隨機數 sig 模擬搜尋
     }
 
-    output.innerHTML = `<p class="loading-spinner">Gemini 正在規劃 ${city} 行程... ⏳</p>`;
+    async function generatePlan() {
+        const apiKey = document.getElementById('api-key').value.trim();
+        const city = document.getElementById('city').value;
+        const pref = document.getElementById('preference').value;
+        const output = document.getElementById('ai-output');
 
-    // 1. 建立 System Instruction 與 User Prompt
-    const systemPrompt = "你是一位台灣旅遊專家。請以繁體中文回答，並始終以 JSON 格式回傳。格式如下：{ \"itinerary\": [ { \"time\": \"\", \"spot\": \"\", \"desc\": \"\", \"lat\": 緯度數字, \"lng\": 經度數字 } ], \"note\": \"\" }";
-    
-    // 如果是第一次
-    if (chatHistory.length === 0) {
-        chatHistory.push({ role: "user", parts: [{ text: systemPrompt + "\n現在我想去" + city + "，需求是：" + pref }] });
-    } else {
-        chatHistory.push({ role: "user", parts: [{ text: pref }] });
+        if (!apiKey) {
+            alert("請輸入 Google AI API Key！");
+            return;
+        }
+
+        output.innerHTML = `<p class="loading-spinner">Gemini 正在規劃中... ⏳</p>`;
+
+        const systemInstruction = `你是一位專業的台灣導遊。請用繁體中文回答。
+        請始終以 JSON 格式回傳，格式如下：
+        {
+          "itinerary": [
+            { "time": "時間", "spot": "景點名稱", "desc": "描述", "lat": 緯度數字, "lng": 經度數字 }
+          ],
+          "note": "額外提醒"
+        }`;
+
+        if (chatHistory.length === 0) {
+            chatHistory.push({ role: "user", parts: [{ text: `${systemInstruction}\n現在我想去${city}，需求是：${pref}` }] });
+        } else {
+            chatHistory.push({ role: "user", parts: [{ text: pref }] });
+        }
+
+        try {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: chatHistory,
+                    generationConfig: { response_mime_type: "application/json", temperature: 0.7 }
+                })
+            });
+
+            const data = await response.json();
+            if (data.error) throw new Error(data.error.message);
+
+            const aiText = data.candidates[0].content.parts[0].text;
+            chatHistory.push({ role: "model", parts: [{ text: aiText }] });
+            
+            renderResults(JSON.parse(aiText));
+            document.getElementById('preference').value = "";
+
+        } catch (error) {
+            output.innerHTML = `<p style="color:red">錯誤：${error.message}</p>`;
+        }
     }
 
-    try {
-        // 使用 Gemini 1.5 Flash 模型 (速度快且免費額度高)
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    function renderResults(data) {
+        const output = document.getElementById('ai-output');
+        let html = `<h3>✅ 建議行程：</h3>`;
+        const latlngs = [];
+        markersLayer.clearLayers();
 
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: chatHistory,
-                generationConfig: {
-                    response_mime_type: "application/json",
-                    temperature: 0.7
-                }
-            })
+        data.itinerary.forEach((item, index) => {
+            // 使用動態圖片 (加上 Taiwan 關鍵字提高精準度)
+            const imgUrl = `https://loremflickr.com/400/250/Taiwan,${encodeURIComponent(item.spot)}/all`;
+
+            html += `
+                <div class="itinerary-item">
+                    <img src="${imgUrl}" class="spot-img" alt="${item.spot}">
+                    <div class="spot-info">
+                        <strong>${index + 1}. ${item.time} - ${item.spot}</strong><br>
+                        <small>${item.desc}</small>
+                    </div>
+                </div>`;
+
+            if (item.lat && item.lng) {
+                const marker = L.marker([item.lat, item.lng])
+                    .bindPopup(`<img src="${imgUrl}" style="width:100%"><br><b>${item.spot}</b>`);
+                markersLayer.addLayer(marker);
+                latlngs.push([item.lat, item.lng]);
+            }
         });
 
-        const data = await response.json();
-        
-        if (data.error) throw new Error(data.error.message);
+        html += `<p style="font-size:0.85rem; padding:10px; background:#fff;">💡 ${data.note || ""}</p>`;
+        output.innerHTML = html;
 
-        // 解析 Gemini 的回傳路徑
-        const aiText = data.candidates[0].content.parts[0].text;
-        const aiJson = JSON.parse(aiText);
-
-        // 將 AI 的回答存入紀錄 (注意 Gemini 的角色標籤是 model)
-        chatHistory.push({ role: "model", parts: [{ text: aiText }] });
-
-        renderResults(aiJson);
-        document.getElementById('preference').value = "";
-        document.getElementById('preference').placeholder = "不滿意？直接告訴 Gemini 如何修改...";
-
-    } catch (error) {
-        output.innerHTML = `<p style="color:red">錯誤：${error.message}<br>請檢查 API Key 是否有效或是否開啟了 Gemini API 權限。</p>`;
-    }
-}
-
-function renderResults(data) {
-    const output = document.getElementById('ai-output');
-    let html = `<h3>✨ Gemini 建議行程</h3>`;
-    const latlngs = [];
-    markersLayer.clearLayers();
-
-    data.itinerary.forEach((item, index) => {
-        html += `
-            <div class="itinerary-item">
-                <strong>${index + 1}. ${item.time} - ${item.spot}</strong><br>
-                <small>${item.desc}</small>
-            </div>`;
-
-        if (item.lat && item.lng) {
-            const marker = L.marker([item.lat, item.lng])
-                .bindPopup(`<b>${item.spot}</b><br>${item.time}`);
-            markersLayer.addLayer(marker);
-            latlngs.push([item.lat, item.lng]);
+        if (latlngs.length > 0) {
+            map.fitBounds(L.latLngBounds(latlngs), { padding: [50, 50] });
         }
-    });
-
-    html += `<p style="font-size:0.85rem; color:#666; border-top:1px solid #ddd; padding-top:10px;">${data.note || ""}</p>`;
-    output.innerHTML = html;
-
-    if (latlngs.length > 0) {
-        const bounds = L.latLngBounds(latlngs);
-        map.fitBounds(bounds, { padding: [50, 50] });
     }
-}
 
-function resetChat() {
-    chatHistory = [];
-    markersLayer.clearLayers();
-    document.getElementById('ai-output').innerHTML = "行程已重設。";
-    map.setView([23.6, 121.0], 7);
-}
+    function resetChat() {
+        chatHistory = [];
+        markersLayer.clearLayers();
+        document.getElementById('ai-output').innerHTML = "行程已重設。";
+        map.setView([23.6, 121.0], 7);
+    }
+</script>
 
 </body>
 </html>
