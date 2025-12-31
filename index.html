@@ -3,37 +3,35 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>AI 台灣導航 - 未來天氣預報版</title>
+    <title>AI 旅遊助理 - 穩定版 (含雨天備案)</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
     <style>
-        :root { --primary: #2c3e50; --info: #3498db; --temp: #e67e22; --date-bg: #ebf5fb; }
-        body { font-family: "Microsoft JhengHei", sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background: #f4f7f6; }
+        :root { --primary: #2c3e50; --accent: #3498db; --rain: #607d8b; }
+        body { font-family: "Microsoft JhengHei", sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background: #fdfdfd; }
         header { background: var(--primary); color: white; padding: 15px; text-align: center; }
-        .main { display: flex; flex: 1; overflow: hidden; }
+        .main-ui { display: flex; flex: 1; overflow: hidden; }
         #sidebar { width: 380px; padding: 20px; background: white; box-shadow: 2px 0 10px rgba(0,0,0,0.1); overflow-y: auto; }
-        input, button { width: 100%; padding: 12px; margin-top: 10px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
-        button { background: var(--info); color: white; border: none; cursor: pointer; font-weight: bold; }
-        #status { margin: 15px 0; font-size: 0.85rem; color: #666; padding: 10px; background: #fff; border-radius: 5px; }
-        .trip-card { background: #fff; border: 1px solid #eee; border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 5px solid var(--info); position: relative; }
-        .weather-info { margin-top: 10px; padding: 8px; background: var(--date-bg); border-radius: 5px; font-size: 0.85rem; }
-        .temp-high { color: #d35400; font-weight: bold; }
-        .temp-low { color: #2980b9; font-weight: bold; }
+        input, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #ddd; }
+        button { background: var(--accent); color: white; border: none; font-weight: bold; cursor: pointer; }
+        .trip-card { border-left: 5px solid var(--accent); background: #f9f9f9; padding: 15px; margin-bottom: 15px; border-radius: 4px; }
+        .rain-alert { background: #e1f5fe; border-left-color: var(--rain); }
+        .weather-chip { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.8rem; background: #eee; margin-top: 5px; }
         #map { flex: 1; }
     </style>
 </head>
 <body>
 
-<header>📅 AI 智慧行程 + 未來 7 天天氣預測</header>
+<header>🌤️ AI 避雨導航助理 (Gemini 1.5 Flash 穩定版)</header>
 
-<div class="main">
+<div class="main-ui">
     <aside id="sidebar">
-        <label><b>1. API Key</b></label>
-        <input type="password" id="api-key" placeholder="貼上 API Key">
-        <label><b>2. 旅遊需求 (請包含時間)</b></label>
-        <input type="text" id="user-prompt" placeholder="例如：下週五去台南兩天一夜" value="下週三去台中玩">
-        <button onclick="runSmartTrip()">🌍 規劃行程並預測天氣</button>
-        <div id="status">準備就緒</div>
+        <label><b>API Key</b></label>
+        <input type="password" id="api-key" placeholder="貼上您的 API Key">
+        <label><b>目的地與時間</b></label>
+        <input type="text" id="user-prompt" placeholder="例如：明天去陽明山玩" value="本週末去宜蘭玩">
+        <button onclick="smartPlan()">🚀 規劃避雨行程</button>
+        <div id="status" style="font-size: 0.85rem; color: #666; margin: 10px 0;">系統就緒</div>
         <div id="itinerary-list"></div>
     </aside>
     <div id="map"></div>
@@ -47,78 +45,78 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     let routingControl = null;
 
-    const weatherMap = { 0:"純淨晴天☀️", 1:"晴朗🌤️", 2:"多雲⛅", 3:"陰天☁️", 45:"濃霧🌫️", 61:"小雨🌧️", 95:"雷雨⛈️" };
+    // 天氣轉換
+    const weatherIcon = (code) => {
+        if ([0, 1].includes(code)) return "☀️ 晴朗";
+        if ([2, 3].includes(code)) return "☁️ 陰天";
+        if ([51, 61, 80, 95].includes(code)) return "🌧️ 雨天(需備案)";
+        return "⛅ 多雲";
+    };
 
-    // 1. 獲取特定日期的預報
-    async function getForecast(lat, lng, dateStr) {
-        try {
-            // Open-Meteo 獲取未來 7 天預報
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto`;
-            const res = await fetch(url);
-            const data = await res.json();
-            
-            // 尋找匹配日期的索引
-            const idx = data.daily.time.indexOf(dateStr);
-            if (idx === -1) return null;
-
-            return {
-                max: data.daily.temperature_2m_max[idx],
-                min: data.daily.temperature_2m_min[idx],
-                desc: weatherMap[data.daily.weathercode[idx]] || "穩定"
-            };
-        } catch (e) { return null; }
-    }
-
-    async function runSmartTrip() {
+    async function smartPlan() {
         const key = document.getElementById('api-key').value.trim();
         const prompt = document.getElementById('user-prompt').value.trim();
         const status = document.getElementById('status');
         const listContainer = document.getElementById('itinerary-list');
 
-        if (!key || !prompt) return alert("請填寫資料");
-        status.innerHTML = "🧬 AI 正在分析日期並規劃行程...";
+        if (!key) return alert("請輸入 API Key");
+        
+        status.innerHTML = "📡 正在確認目的地天氣預報...";
         listContainer.innerHTML = "";
 
         try {
-            // 今天的日期 (供 AI 參考)
-            const today = new Date().toISOString().split('T')[0];
-            
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
-            const sysPrompt = `你是一位導遊。請規劃3個景點。
-            請根據需求判斷日期。今天是 ${today}。
-            嚴格回傳JSON陣列：[{"name":"名稱","date":"YYYY-MM-DD","lat":23.0,"lng":120.0,"desc":"介紹"}]。
-            若沒提日期，預設使用明天。`;
+            // 1. 預抓地區座標 (以目的地中心點為例)
+            const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(prompt)}&format=json&limit=1`);
+            const geoData = await geoRes.json();
+            const lat = geoData[0]?.lat || 25.03;
+            const lng = geoData[0]?.lon || 121.56;
 
-            const res = await fetch(url, {
+            // 2. 獲取未來 7 天天氣 (Open-Meteo)
+            const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=weathercode,temperature_2m_max&timezone=auto`);
+            const weatherData = await weatherRes.json();
+            const todayIndex = 0; // 簡化：先看今日/明日
+            const isRaining = [51, 61, 80, 95].includes(weatherData.daily.weathercode[todayIndex]);
+
+            status.innerHTML = `🌡️ 當地預報：${weatherIcon(weatherData.daily.weathercode[todayIndex])}。正在由 AI 調整行程...`;
+
+            // 3. 呼叫 Gemini (使用最新路徑格式避免 404)
+            // 修正路徑：使用 models/gemini-1.5-flash-latest
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${key}`;
+            
+            const sysMsg = `你是一位導遊。請規劃3個景點。
+            注意：當地預報為 ${isRaining ? '雨天' : '晴天'}。
+            ${isRaining ? '請「務必」推薦室內景點、博物館或觀光工廠作為雨天備案。' : '請推薦戶外自然景點為主。'}
+            嚴格回傳JSON陣列：[{"name":"名稱","type":"indoor|outdoor","lat":25.0,"lng":121.0,"desc":"介紹"}]`;
+
+            const aiRes = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: `${sysPrompt}\n需求：${prompt}` }] }] })
+                body: JSON.stringify({ contents: [{ parts: [{ text: `${sysMsg}\n需求：${prompt}` }] }] })
             });
 
-            const genData = await res.json();
-            const locations = JSON.parse(genData.candidates[0].content.parts[0].text.match(/\[[\s\S]*\]/)[0]);
+            const aiData = await aiRes.json();
+            if (!aiRes.ok) throw new Error(aiData.error.message);
 
-            status.innerHTML = "🌡️ 正在抓取預測天氣資料...";
+            const locations = JSON.parse(aiData.candidates[0].content.parts[0].text.match(/\[[\s\S]*\]/)[0]);
 
-            for (let loc of locations) {
-                const weather = await getForecast(loc.lat, loc.lng, loc.date);
+            // 4. 渲染結果
+            locations.forEach(loc => {
                 const card = document.createElement('div');
-                card.className = "trip-card";
+                card.className = `trip-card ${isRaining && loc.type === 'indoor' ? 'rain-alert' : ''}`;
                 card.innerHTML = `
-                    <strong>${loc.name}</strong> <small>(${loc.date})</small><br>
-                    <p style="font-size:0.85rem; color:#666; margin:5px 0;">${loc.desc}</p>
-                    <div class="weather-info">
-                        預測天氣：${weather ? `${weather.desc} | <span class="temp-low">${weather.min}°C</span> ~ <span class="temp-high">${weather.max}°C</span>` : '超出 7 天預報範圍'}
-                    </div>
+                    <strong>${loc.name}</strong> [${loc.type === 'indoor' ? '室內' : '戶外'}]<br>
+                    <small>${loc.desc}</small><br>
+                    <div class="weather-chip">當地預測：${weatherIcon(weatherData.daily.weathercode[todayIndex])}</div>
                 `;
                 listContainer.appendChild(card);
-            }
+            });
 
             renderRoute(locations);
-            status.innerHTML = `✅ 已完成 ${locations[0].date} 的行程規劃！`;
+            status.innerHTML = `✅ 已根據天氣完成規劃 (${isRaining ? '已啟動雨天備案' : '戶外行程'})`;
 
         } catch (e) {
-            status.innerHTML = `❌ 錯誤：${e.message}`;
+            status.innerHTML = `❌ 系統錯誤：${e.message}`;
+            console.error(e);
         }
     }
 
@@ -127,7 +125,7 @@
         const wps = locations.map(l => L.latLng(l.lat, l.lng));
         routingControl = L.Routing.control({
             waypoints: wps,
-            createMarker: (i, wp) => L.marker(wp.latLng).bindPopup(`<b>${locations[i].name}</b>`)
+            createMarker: (i, wp) => L.marker(wp.latLng).bindPopup(locations[i].name)
         }).addTo(map);
         map.fitBounds(L.latLngBounds(wps), { padding: [50, 50] });
     }
