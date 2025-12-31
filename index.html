@@ -3,40 +3,48 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>AI 台灣旅遊 - 高穩定快取版</title>
+    <title>AI 台灣旅遊 - 完整快取管理版</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
     <style>
-        :root { --primary: #2c3e50; --info: #3498db; }
+        :root { --primary: #2c3e50; --info: #3498db; --danger: #e74c3c; --success: #27ae60; }
         body { font-family: "Microsoft JhengHei", sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background: #f4f7f6; }
         header { background: var(--primary); color: white; padding: 15px; text-align: center; }
         .layout { display: flex; flex: 1; overflow: hidden; }
         #sidebar { width: 350px; background: white; padding: 20px; box-shadow: 2px 0 10px rgba(0,0,0,0.1); overflow-y: auto; }
         .input-group { margin-bottom: 15px; }
-        input, button { width: 100%; padding: 12px; margin-top: 5px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
-        button { background: var(--info); color: white; border: none; font-weight: bold; cursor: pointer; }
-        button:disabled { background: #ccc; }
-        #status { margin-top: 15px; padding: 12px; border-radius: 8px; font-size: 0.9rem; background: #f8f9fa; line-height: 1.5; }
-        .cache-hint { color: #27ae60; font-weight: bold; font-size: 0.8rem; }
+        label { font-weight: bold; color: #444; }
+        input, button { width: 100%; padding: 12px; margin-top: 8px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
+        
+        .btn-plan { background: var(--info); color: white; border: none; font-weight: bold; cursor: pointer; }
+        .btn-clear { background: #fff; color: var(--danger); border: 1px solid var(--danger); margin-top: 10px; cursor: pointer; transition: 0.3s; }
+        .btn-clear:hover { background: var(--danger); color: #fff; }
+        
+        button:disabled { background: #ccc; cursor: not-allowed; border: none; }
+        #status { margin-top: 15px; padding: 12px; border-radius: 8px; font-size: 0.9rem; background: #f8f9fa; line-height: 1.5; border: 1px solid #eee; }
+        #itinerary { margin-top: 20px; }
         #map { flex: 1; }
     </style>
 </head>
 <body>
 
-<header>🌍 AI 行程規劃 (防禦性編程 + 快取版)</header>
+<header>🌍 AI 智慧導航 (含快取管理系統)</header>
 
 <div class="layout">
     <aside id="sidebar">
         <div class="input-group">
-            <label>Gemini API Key</label>
+            <label>1. Gemini API Key</label>
             <input type="password" id="api-key" placeholder="貼上 API Key...">
         </div>
         <div class="input-group">
-            <label>目的地</label>
-            <input type="text" id="user-prompt" placeholder="例如：台北信義區美食之旅">
+            <label>2. 旅遊目的地</label>
+            <input type="text" id="user-prompt" placeholder="例如：台南美食之旅">
         </div>
-        <button id="plan-btn" onclick="startApp()">✨ 開始規劃</button>
-        <div id="status">系統就緒。</div>
+        
+        <button class="btn-plan" id="plan-btn" onclick="startApp()">✨ 開始規劃行程</button>
+        <button class="btn-clear" id="clear-btn" onclick="clearCache()">🧹 清除所有快取</button>
+        
+        <div id="status">準備就緒。</div>
         <div id="itinerary"></div>
     </aside>
     <div id="map"></div>
@@ -50,13 +58,34 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     let routingControl = null;
 
-    function updateUI(msg, isError = false) {
+    function updateStatus(msg, color = "#2c3e50") {
         const s = document.getElementById('status');
-        s.style.color = isError ? "#e74c3c" : "#2c3e50";
+        s.style.color = color;
         s.innerHTML = msg;
     }
 
-    // 座標校正
+    // --- 一鍵清除快取功能 ---
+    function clearCache() {
+        if (confirm("確定要清除所有已儲存的行程快取嗎？這將強制下次搜尋時重新消耗 API 配額。")) {
+            // 找出所有以 'trip_' 開頭的儲存項並移除
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('trip_')) {
+                    localStorage.removeItem(key);
+                }
+            });
+            
+            // 重置 UI
+            document.getElementById('itinerary').innerHTML = "";
+            if (routingControl) map.removeControl(routingControl);
+            updateStatus("✅ 快取已清空！您可以重新發送請求。", "#27ae60");
+            
+            // 視覺動畫回饋
+            const btn = document.getElementById('clear-btn');
+            btn.innerHTML = "✨ 已清除！";
+            setTimeout(() => { btn.innerHTML = "🧹 清除所有快取"; }, 2000);
+        }
+    }
+
     async function getGPS(name) {
         try {
             const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(name)}&format=json&limit=1`);
@@ -70,19 +99,20 @@
         const prompt = document.getElementById('user-prompt').value.trim();
         const btn = document.getElementById('plan-btn');
         
-        if (!key || !prompt) return alert("請填寫完整資訊");
+        if (!key || !prompt) return alert("請填寫 API Key 與目的地");
 
-        // --- 1. 檢查快取 (LocalStorage) ---
         const cacheKey = `trip_${prompt}`;
         const cachedData = localStorage.getItem(cacheKey);
+        
+        // 檢查快取
         if (cachedData) {
-            updateUI("<span class="cache-hint">📌 偵測到快取紀錄，正在加載舊行程...</span>");
+            updateStatus("📌 從快取載入行程 (不消耗 API)...", "#27ae60");
             renderAll(JSON.parse(cachedData));
             return;
         }
 
         btn.disabled = true;
-        updateUI("🧬 正在請求 AI 生成 (Gemini 2.0)...");
+        updateStatus("🧬 正在請求 Gemini 2.0 生成新行程...");
 
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
         
@@ -91,61 +121,54 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    contents: [{ parts: [{ text: `規劃台灣行程：3景點2美食。嚴格JSON格式：[{"name":"名稱","type":"attraction|food","lat":23.0,"lng":120.0,"desc":"介紹"}]。需求：${prompt}` }] }]
+                    contents: [{ parts: [{ text: `規劃台灣行程：3景點2美食。嚴格回傳JSON格式陣列，不要Markdown標籤。需求：${prompt}` }] }]
                 })
             });
 
             const data = await response.json();
 
-            // --- 2. 防禦性檢查：核心修正點 ---
-            if (!response.ok) {
-                throw new Error(data.error?.message || "API 連線失敗");
-            }
-
-            if (!data.candidates || data.candidates.length === 0) {
-                // 有時 AI 會因為內容安全政策攔截回傳
-                throw new Error("AI 拒絕生成內容（可能觸發安全過濾），請換個說法。");
-            }
+            if (!response.ok) throw new Error(data.error?.message || "API 連線失敗");
+            if (!data.candidates) throw new Error("AI 未能生成內容，請重試。");
 
             const rawText = data.candidates[0].content.parts[0].text;
-            const locations = JSON.parse(rawText.match(/\[[\s\S]*\]/)[0]);
+            const jsonMatch = rawText.match(/\[[\s\S]*\]/);
+            if (!jsonMatch) throw new Error("AI 回傳資料格式錯誤");
+            
+            const locations = JSON.parse(jsonMatch[0]);
 
-            updateUI("🔍 正在校正 GPS 座標...");
+            updateStatus("🔍 正在校正 GPS 精確座標...");
             const corrected = await Promise.all(locations.map(async loc => {
                 const p = await getGPS(loc.name);
                 return p ? { ...loc, lat: p.lat, lng: p.lng } : loc;
             }));
 
-            // --- 3. 儲存至快取 ---
+            // 儲存快取
             localStorage.setItem(cacheKey, JSON.stringify(corrected));
             
             renderAll(corrected);
-            updateUI("✅ 規劃完成！資料已儲存至快取。");
+            updateStatus("✅ 成功生成並儲存快取！", "#27ae60");
 
         } catch (e) {
-            updateUI(`❌ 錯誤：${e.message}`, true);
-            console.error(e);
+            updateStatus(`❌ 錯誤：${e.message}`, "#e74c3c");
         } finally {
             btn.disabled = false;
         }
     }
 
     function renderAll(locations) {
-        // 渲染地圖
         if (routingControl) map.removeControl(routingControl);
         const wps = locations.map(l => L.latLng(l.lat, l.lng));
         routingControl = L.Routing.control({
             waypoints: wps,
             language: 'zh',
-            createMarker: (i, wp) => L.marker(wp.latLng).bindPopup(locations[i].name)
+            createMarker: (i, wp) => L.marker(wp.latLng).bindPopup(`<b>${locations[i].name}</b><br>${locations[i].desc}`)
         }).addTo(map);
         map.fitBounds(L.latLngBounds(wps), { padding: [50, 50] });
 
-        // 渲染清單
         const list = document.getElementById('itinerary');
-        list.innerHTML = "<h4>行程路線：</h4>" + locations.map(l => 
-            `<div style="margin-bottom:10px; padding:8px; border-left:3px solid #3498db; background:#f9f9f9;">
-                <b>${l.name}</b><br><small>${l.desc}</small>
+        list.innerHTML = "<h4>📋 行程列表：</h4>" + locations.map(l => 
+            `<div style="margin-bottom:12px; padding:10px; border-left:4px solid #3498db; background:#fff; border-radius:4px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
+                <strong>${l.name}</strong><br><small style="color:#666;">${l.desc}</small>
             </div>`
         ).join('');
     }
