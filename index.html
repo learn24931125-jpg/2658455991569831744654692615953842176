@@ -4,295 +4,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 台灣智慧旅遊行程規畫系統</title>
-    
+    <title>AI 台灣旅遊規畫系統</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
     <style>
-        :root {
-            --primary: #2c3e50;
-            --accent: #27ae60;
-            --sidebar-width: 350px;
-        }
-
-        body {
-            font-family: "Microsoft JhengHei", system-ui, sans-serif;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            background: #f8f9fa;
-        }
-
-        /* 標題區 */
-        header {
-            background: var(--primary);
-            color: white;
-            padding: 1rem;
-            text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            z-index: 1000;
-        }
-
-        .main-container {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-        }
-
-        /* 側邊欄：設定與 API 區 */
-        .sidebar {
-            width: var(--sidebar-width);
-            background: white;
-            padding: 20px;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .section-title {
-            font-weight: bold;
-            color: var(--primary);
-            border-left: 4px solid var(--accent);
-            padding-left: 10px;
-            margin-bottom: 10px;
-        }
-
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        label { font-size: 0.9rem; font-weight: 600; }
-
-        input, select, textarea {
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-
-        button {
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 15px;
-            border-radius: 6px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
+        :root { --primary: #2c3e50; --accent: #27ae60; --error: #e74c3c; }
+        body { font-family: "Microsoft JhengHei", sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background: #f4f4f9; }
+        header { background: var(--primary); color: white; padding: 1rem; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+        .sidebar { width: 350px; background: white; padding: 20px; border-right: 1px solid #ddd; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .section-title { font-weight: bold; border-left: 4px solid var(--accent); padding-left: 10px; margin: 10px 0; }
+        input, select, button { padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 14px; }
+        button { background: var(--accent); color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
         button:hover { background: #219150; }
-
-        /* 地圖展示區 */
-        #map-wrapper {
-            flex: 1;
-            position: relative;
-        }
-
-        #map { height: 100%; width: 100%; }
-
-        /* 狀態標籤 */
-        .status-bar {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            z-index: 1000;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 8px 15px;
-            border-radius: 30px;
-            font-size: 0.85rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            border: 1px solid #ddd;
-        }
-
-        /* 行程結果卡片 */
-        #itinerary-result {
-            margin-top: 10px;
-            font-size: 0.9rem;
-            line-height: 1.5;
-        }
-
-        .day-block {
-            background: #f1f8f4;
-            padding: 10px;
-            border-radius: 6px;
-            margin-bottom: 10px;
-        }
+        #map { flex: 1; position: relative; }
+        .status-bar { position: absolute; bottom: 20px; left: 20px; z-index: 1000; background: white; padding: 8px 15px; border-radius: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: 12px; }
+        .day-card { background: #f1f8f4; padding: 10px; border-radius: 6px; margin-top: 10px; border-left: 3px solid var(--accent); }
     </style>
 </head>
 <body>
 
-<header>
-    <h1>🇹🇼 AI 台灣智慧旅遊行程規畫</h1>
-</header>
+<header><h1>🌍 AI 台灣智慧旅遊行程規畫</h1></header>
 
 <div class="main-container">
     <aside class="sidebar">
-        <div class="input-group">
-            <div class="section-title">API 驗證</div>
-            <label for="api-key">Gemini API Key</label>
-            <input type="password" id="api-key" placeholder="在此貼上您的 API 金鑰">
-        </div>
+        <div class="section-title">API 金鑰設定</div>
+        <input type="password" id="api-key" placeholder="貼上 Gemini API Key">
+        <button style="background: #34495e;" onclick="listModels()">檢查可用模型清單</button>
 
-        <div class="input-group">
-            <div class="section-title">行程設定</div>
-            <label for="destination">目的地</label>
-            <select id="destination">
-                <option value="[25.0330, 121.5654]">台北市</option>
-                <option value="[24.1477, 120.6736]">台中市</option>
-                <option value="[22.9997, 120.2270]">台南市</option>
-                <option value="[22.6273, 120.3014]">高雄市</option>
-                <option value="[23.9771, 121.6044]">花蓮縣</option>
-            </select>
-        </div>
+        <div class="section-title">行程偏好</div>
+        <label>目的地</label>
+        <select id="destination">
+            <option value="台北市">台北市</option>
+            <option value="台中市">台中市</option>
+            <option value="台南市">台南市</option>
+            <option value="高雄市">高雄市</option>
+            <option value="花蓮縣">花蓮縣</option>
+        </select>
+        
+        <label>旅遊天數 (1-5)</label>
+        <input type="number" id="days" value="2" min="1" max="5">
 
-        <div class="input-group">
-            <label for="days">旅遊天數</label>
-            <input type="number" id="days" value="2" min="1" max="5">
-        </div>
+        <label>旅遊風格</label>
+        <select id="style">
+            <option value="在地美食與夜市">美食吃貨</option>
+            <option value="戶外自然與美景">自然山海</option>
+            <option value="歷史文化與古蹟">文青古蹟</option>
+        </select>
 
-        <div class="input-group">
-            <label for="style">旅遊風格</label>
-            <select id="style">
-                <option value="美食與在地小吃">美食吃貨</option>
-                <option value="自然與登山健行">自然山海</option>
-                <option value="歷史建築與文青街區">文青古蹟</option>
-            </select>
-        </div>
+        <button onclick="planTrip()">生成 AI 智慧路線</button>
 
-        <button onclick="startPlanning()">開始 AI 智慧規劃</button>
-
-        <div id="itinerary-result"></div>
+        <div id="itinerary-list"></div>
     </aside>
 
-    <main id="map-wrapper">
-        <div id="map"></div>
-        <div class="status-bar" id="status-text">系統狀態：準備就緒</div>
+    <main id="map">
+        <div class="status-bar" id="status">準備就緒</div>
     </main>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <script>
-    // 1. 初始化地圖
-    const map = L.map('map').setView([25.0330, 121.5654], 13);
+    // 1. 初始化地圖 (預設台北)
+    const map = L.map('map').setView([25.033, 121.565], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
+        attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    const routeLayer = L.featureGroup().addTo(map);
+    const layerGroup = L.featureGroup().addTo(map);
 
-    // 2. 主程式邏輯
-    async function startPlanning() {
-        const apiKey = document.getElementById('api-key').value.trim();
-        const status = document.getElementById('status-text');
+    // 2. 診斷功能：列出模型 (解決你遇到的 404 問題)
+    async function listModels() {
+        const key = document.getElementById('api-key').value.trim();
+        if (!key) return alert("請先輸入 Key");
         
-        if (!apiKey) {
-            alert("請輸入有效的 Gemini API Key");
-            return;
-        }
-
-        status.innerText = "⏳ 正在驗證 Key 並規劃行程...";
-        status.style.color = "#d68910";
-
         try {
-            const planData = await fetchGeminiAI(apiKey);
-            renderRoute(planData);
-            status.innerText = "✅ 行程規劃完成！";
-            status.style.color = "green";
-        } catch (error) {
-            console.error(error);
-            status.innerText = "❌ 發生錯誤，請檢查 Key 或網路";
-            status.style.color = "red";
-            alert("錯誤: " + error.message);
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+            const data = await res.json();
+            console.log("您的可用模型清單:", data);
+            alert("已在瀏覽器控制台 (F12) 列出所有模型，請查看 name 欄位。");
+        } catch (e) {
+            alert("無法獲取清單: " + e.message);
         }
     }
 
-    // 3. 串接 Gemini API
-    async function fetchGeminiAI(apiKey) {
-        const destName = document.getElementById('destination').selectedOptions[0].text;
+    // 3. 核心功能：行程規畫
+    async function planTrip() {
+        const key = document.getElementById('api-key').value.trim();
+        const status = document.getElementById('status');
+        const listDiv = document.getElementById('itinerary-list');
+
+        if (!key) return alert("請輸入 API Key");
+
+        status.innerText = "🚀 AI 思考中...";
+        listDiv.innerHTML = "";
+
+        const dest = document.getElementById('destination').value;
         const days = document.getElementById('days').value;
         const style = document.getElementById('style').value;
 
-        const prompt = `你是一位專業的台灣旅遊規劃師。請規劃 ${destName} 的 ${days} 天旅遊行程，風格為 ${style}。
-        請回傳 JSON 格式陣列，不要有任何 Markdown 標籤或其他說明文字。
-        格式：[{"day": 1, "order": 1, "name": "景點", "lat": 25.1, "lng": 121.5, "desc": "描述"}]
-        請確保緯度(lat)與經度(lng)是精確的數字。`;
+        // 提示詞優化：強制要求標準 JSON
+        const prompt = `你是一位專業導遊。請規劃${dest}的${days}天${style}旅遊行程。
+        回傳格式必須是嚴格的 JSON 陣列，不包含 Markdown 標籤。範例：
+        [{"day": 1, "order": 1, "name": "景點名", "lat": 25.0, "lng": 121.0, "desc": "描述"}]`;
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-        
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
-            })
-        });
+        // 注意：這裡嘗試使用 gemini-1.5-flash-latest，如果失敗請檢查 listModels
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
 
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error.message);
-
-        const rawText = data.candidates[0].content.parts[0].text;
-        const cleanJson = rawText.replace(/```json|```/g, "").trim();
-        return JSON.parse(cleanJson);
-    }
-
-    // 4. 地圖渲染與連線
-    function renderRoute(spots) {
-        routeLayer.clearLayers();
-        const resultDiv = document.getElementById('itinerary-result');
-        resultDiv.innerHTML = "<h3>📅 AI 推薦行程</h3>";
-
-        const colors = ['#3498db', '#e74c3c', '#2ecc71', '#f1c40f', '#9b59b6'];
-        const daysMap = {};
-
-        // 分類天數
-        spots.forEach(s => {
-            if (!daysMap[s.day]) daysMap[s.day] = [];
-            daysMap[s.day].push(s);
-        });
-
-        Object.keys(daysMap).forEach((day, index) => {
-            const daySpots = daysMap[day].sort((a, b) => a.order - b.order);
-            const color = colors[index % colors.length];
-            const polylineCoords = [];
-
-            const dayEl = document.createElement('div');
-            dayEl.className = 'day-block';
-            dayEl.innerHTML = `<strong style="color:${color}">第 ${day} 天</strong><br>`;
-
-            daySpots.forEach(spot => {
-                polylineCoords.push([spot.lat, spot.lng]);
-                
-                // 地圖標記
-                L.marker([spot.lat, spot.lng])
-                    .bindPopup(`<b>D${day}-${spot.order}: ${spot.name}</b><br>${spot.desc}`)
-                    .addTo(routeLayer);
-                
-                dayEl.innerHTML += `${spot.order}. ${spot.name}<br>`;
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
             });
 
-            // 畫出連線
-            L.polyline(polylineCoords, {
-                color: color,
-                weight: 4,
-                opacity: 0.6,
-                dashArray: '8, 8'
-            }).addTo(routeLayer);
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error.message);
 
-            resultDiv.appendChild(dayEl);
+            let text = data.candidates[0].content.parts[0].text;
+            // 過濾可能的 Markdown 語法
+            const jsonStr = text.replace(/```json|```/g, "").trim();
+            const spots = JSON.parse(jsonStr);
+
+            renderOnMap(spots);
+            status.innerText = "✅ 行程生成成功！";
+        } catch (error) {
+            status.innerText = "❌ 錯誤: " + error.message;
+            console.error(error);
+        }
+    }
+
+    // 4. 繪製標記與路徑
+    function renderOnMap(spots) {
+        layerGroup.clearLayers();
+        const listDiv = document.getElementById('itinerary-list');
+        const colors = ['#3498db', '#e74c3c', '#2ecc71', '#f1c40f', '#9b59b6'];
+        const dayMap = {};
+
+        spots.forEach(s => {
+            if (!dayMap[s.day]) dayMap[s.day] = [];
+            dayMap[s.day].push(s);
         });
 
-        // 調整視野
-        map.fitBounds(routeLayer.getBounds().pad(0.1));
+        Object.keys(dayMap).forEach((day, i) => {
+            const currentSpots = dayMap[day].sort((a, b) => a.order - b.order);
+            const color = colors[i % colors.length];
+            const coords = [];
+
+            const dayCard = document.createElement('div');
+            dayCard.className = 'day-card';
+            dayCard.innerHTML = `<strong>第 ${day} 天 (${document.getElementById('style').value})</strong><br>`;
+
+            currentSpots.forEach(spot => {
+                coords.push([spot.lat, spot.lng]);
+                L.marker([spot.lat, spot.lng])
+                    .bindPopup(`<b>${spot.name}</b><br>${spot.desc}`)
+                    .addTo(layerGroup);
+                dayCard.innerHTML += `${spot.order}. ${spot.name}<br>`;
+            });
+
+            L.polyline(coords, { color: color, weight: 5, opacity: 0.7, dashArray: '10, 10' }).addTo(layerGroup);
+            listDiv.appendChild(dayCard);
+        });
+
+        map.fitBounds(layerGroup.getBounds().pad(0.1));
     }
 </script>
 
 </body>
-</html>
+</html>        
