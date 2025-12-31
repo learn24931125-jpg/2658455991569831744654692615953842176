@@ -3,37 +3,54 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>AI 智慧導航 - 預算與安全增強版</title>
+    <title>AI 點對點智慧規劃器 - Gemini 2.0</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
     <style>
-        :root { --primary: #2c3e50; --accent: #27ae60; --danger: #e74c3c; }
-        body { font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
-        header { background: var(--primary); color: white; padding: 15px; text-align: center; font-weight: bold; }
-        .main { display: flex; flex: 1; overflow: hidden; }
-        #sidebar { width: 400px; padding: 20px; background: white; box-shadow: 2px 0 10px rgba(0,0,0,0.1); overflow-y: auto; }
-        .input-box { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; background: var(--accent); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        #status { margin-top: 10px; color: var(--danger); font-size: 0.9rem; font-weight: bold; }
-        .trip-card { background: #f9f9f9; border-left: 5px solid var(--accent); padding: 15px; margin-top: 15px; border-radius: 5px; }
-        .budget-box { background: #fff3e0; border: 1px solid #ffe0b2; padding: 10px; margin-top: 10px; border-radius: 5px; font-size: 0.9rem; }
+        :root { --primary: #2c3e50; --accent: #3498db; --warning: #f1c40f; --rainy: #607d8b; }
+        body { font-family: "PingFang TC", sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background: #fdfdfd; }
+        header { background: var(--primary); color: white; padding: 15px; text-align: center; }
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+        #sidebar { width: 420px; padding: 20px; background: white; box-shadow: 2px 0 10px rgba(0,0,0,0.1); overflow-y: auto; z-index: 10; }
+        .group { margin-bottom: 12px; }
+        label { font-weight: bold; font-size: 0.9rem; color: #555; }
+        input, button { width: 100%; padding: 12px; margin-top: 5px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
+        button { background: var(--accent); color: white; border: none; font-weight: bold; cursor: pointer; font-size: 1rem; }
+        button:hover { opacity: 0.9; }
+        #status-bar { margin: 15px 0; padding: 10px; border-radius: 6px; font-size: 0.85rem; line-height: 1.5; background: #f8f9fa; border: 1px solid #eee; }
+        .card { padding: 15px; margin-bottom: 15px; border-radius: 8px; border-left: 6px solid var(--accent); background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .card.rain { border-left-color: var(--rainy); background: #f0f4f7; }
+        .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; margin-top: 5px; font-weight: bold; }
+        .tag-weather { background: #fff3e0; color: #e67e22; }
+        .tag-backup { background: #e8f5e9; color: #2e7d32; }
         #map { flex: 1; }
     </style>
 </head>
 <body>
 
-<header>🌍 AI 旅遊導航 (Gemini 2.0 + 預算預估)</header>
+<header>🚗 AI 點對點智慧導航系統 (Gemini 2.0 Flash)</header>
 
-<div class="main">
+<div class="main-container">
     <aside id="sidebar">
-        <label>新的 API Key (請勿外流)</label>
-        <input type="password" id="api-key" class="input-box" placeholder="輸入新的 API Key">
+        <div class="group">
+            <label>1. API Key (請使用新產生的 Key)</label>
+            <input type="password" id="api-key" placeholder="貼上您的 API Key">
+        </div>
+        <div class="group">
+            <label>2. 出發地</label>
+            <input type="text" id="start-pos" placeholder="例如：台北車站" value="台中火車站">
+        </div>
+        <div class="group">
+            <label>3. 目的地</label>
+            <input type="text" id="end-pos" placeholder="例如：日月潭" value="清境農場">
+        </div>
+        <div class="group">
+            <label>4. 額外需求</label>
+            <input type="text" id="extra-req" placeholder="例如：親子旅遊、要吃甜點" value="親子旅遊">
+        </div>
+        <button onclick="startDynamicPlan()">🗺️ 開始點對點規劃</button>
         
-        <label>目的地</label>
-        <input type="text" id="user-prompt" class="input-box" placeholder="例如：台北兩天一夜" value="台北捷運一日遊">
-        
-        <button onclick="startTrip()">🚀 產生行程與預算</button>
-        <div id="status"></div>
+        <div id="status-bar">準備就緒，請輸入行程資訊。</div>
         <div id="itinerary-list"></div>
     </aside>
     <div id="map"></div>
@@ -47,64 +64,94 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     let routingControl = null;
 
-    async function startTrip() {
+    async function getCoords(name) {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(name)}&format=json&limit=1`);
+        const data = await res.json();
+        return data[0] ? { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), name: data[0].display_name } : null;
+    }
+
+    async function checkRain(lat, lng) {
+        const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=weathercode&timezone=auto`);
+        const data = await res.json();
+        const code = data.daily.weathercode[0];
+        return { isRain: [51, 61, 80, 95].includes(code), code };
+    }
+
+    async function startDynamicPlan() {
         const key = document.getElementById('api-key').value.trim();
-        const prompt = document.getElementById('user-prompt').value.trim();
-        const status = document.getElementById('status');
+        const start = document.getElementById('start-pos').value.trim();
+        const end = document.getElementById('end-pos').value.trim();
+        const req = document.getElementById('extra-req').value.trim();
+        const status = document.getElementById('status-bar');
         const list = document.getElementById('itinerary-list');
 
-        if (!key) return alert("請貼上新的 API Key！舊的已被 Google 封鎖。");
-        status.innerHTML = "正在連線至 Gemini 2.0 Flash...";
+        if (!key || !start || !end) return alert("請輸入 Key、出發地與目的地");
+
+        status.innerHTML = "🔍 定位經緯度與分析天氣中...";
         list.innerHTML = "";
 
         try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
-            const sysPrompt = `你是一位導遊。規劃3個景點。
-            請額外包含一個 "budget" 欄位估算花費。
-            嚴格回傳JSON陣列：[{"name":"名稱","lat":25.0,"lng":121.0,"desc":"介紹","budget":"NT$500"}]`;
+            const startNode = await getCoords(start);
+            const endNode = await getCoords(end);
+            if (!startNode || !endNode) throw new Error("定位失敗，請輸入更具體的地名");
 
-            const res = await fetch(url, {
+            const weather = await checkRain(endNode.lat, endNode.lng);
+            const weatherMsg = weather.isRain ? "🌧️ 偵測到下雨" : "☀️ 天氣良好";
+            status.innerHTML = `🚩 從 ${start} 到 ${end}<br>${weatherMsg}，正在請 AI 規劃行程...`;
+
+            // 呼叫 Gemini 2.0 Flash
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+            const sysPrompt = `你是一位旅遊導遊。
+            出發地：${startNode.name}
+            目的地：${endNode.name}
+            當地天氣：${weatherMsg}
+            需求：${req}
+            
+            請在出發地到終點之間規劃「2個中途景點」與「1個目的地景點」。
+            如果是雨天，請將中途景點全部換成「室內備案」。
+            回傳 JSON 陣列：[{"name":"名稱","lat":0.0,"lng":0.0,"desc":"介紹","is_backup":true/false,"budget":"預算"}]`;
+
+            const aiRes = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: `${sysPrompt}\n需求：${prompt}` }] }] })
+                body: JSON.stringify({ contents: [{ parts: [{ text: sysPrompt }] }] })
             });
 
-            const data = await res.json();
-            if (!res.ok) {
-                if (data.error?.message.includes("leaked")) throw new Error("此 Key 已洩漏被封鎖，請去 AI Studio 重新申請一個！");
-                throw new Error(data.error.message);
-            }
+            const data = await aiRes.json();
+            const rawData = data.candidates[0].content.parts[0].text;
+            const locations = JSON.parse(rawData.match(/\[[\s\S]*\]/)[0]);
 
-            const locations = JSON.parse(data.candidates[0].content.parts[0].text.match(/\[[\s\S]*\]/)[0]);
-            let totalBudget = 0;
+            // 加上起點與終點進行導航
+            const fullRoute = [{name: startNode.name, lat: startNode.lat, lng: startNode.lng, desc: "起點"}, ...locations, {name: endNode.name, lat: endNode.lat, lng: endNode.lng, desc: "目的地"}];
 
-            locations.forEach(loc => {
+            fullRoute.forEach((loc, i) => {
                 const card = document.createElement('div');
-                card.className = "trip-card";
+                card.className = `card ${weather.isRain ? 'rain' : ''}`;
                 card.innerHTML = `
-                    <strong>${loc.name}</strong><br>
-                    <small>${loc.desc}</small>
-                    <div class="budget-box">💰 預估費用: ${loc.budget}</div>
+                    <strong>${i === 0 ? '🚩' : i === fullRoute.length -1 ? '🏁' : '📍'} ${loc.name}</strong>
+                    <p style="font-size:0.85rem; color:#666; margin:5px 0;">${loc.desc || ''}</p>
+                    ${loc.budget ? `<span class="tag tag-weather">💰 預算: ${loc.budget}</span>` : ''}
+                    ${weather.isRain ? `<span class="tag tag-backup">☂️ 雨天備案模式</span>` : ''}
                 `;
                 list.appendChild(card);
             });
 
-            renderMap(locations);
-            status.style.color = "green";
-            status.innerHTML = "✅ 行程產出成功！";
+            drawRoute(fullRoute);
+            status.innerHTML = `✅ 規劃完成！${weather.isRain ? '已自動切換雨天備案路徑' : '享受戶外行程'}`;
 
         } catch (e) {
-            status.style.color = "red";
             status.innerHTML = `❌ 錯誤：${e.message}`;
+            console.error(e);
         }
     }
 
-    function renderMap(locations) {
+    function drawRoute(nodes) {
         if (routingControl) map.removeControl(routingControl);
-        const wps = locations.map(l => L.latLng(l.lat, l.lng));
+        const wps = nodes.map(n => L.latLng(n.lat, n.lng));
         routingControl = L.Routing.control({
             waypoints: wps,
-            createMarker: (i, wp) => L.marker(wp.latLng).bindPopup(locations[i].name)
+            lineOptions: { styles: [{ color: '#3498db', weight: 6, opacity: 0.8 }] },
+            createMarker: (i, wp) => L.marker(wp.latLng).bindPopup(`<b>${nodes[i].name}</b>`)
         }).addTo(map);
         map.fitBounds(L.latLngBounds(wps), { padding: [50, 50] });
     }
