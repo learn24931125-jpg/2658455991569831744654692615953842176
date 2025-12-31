@@ -3,34 +3,38 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>AI 台灣導航 - 超級相容版</title>
+    <title>AI 台灣導航 - 未來天氣預報版</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
     <style>
-        :root { --primary: #2c3e50; --info: #3498db; }
-        body { font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
-        header { background: var(--primary); color: white; padding: 10px; text-align: center; }
+        :root { --primary: #2c3e50; --info: #3498db; --temp: #e67e22; --date-bg: #ebf5fb; }
+        body { font-family: "Microsoft JhengHei", sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background: #f4f7f6; }
+        header { background: var(--primary); color: white; padding: 15px; text-align: center; }
         .main { display: flex; flex: 1; overflow: hidden; }
-        #sidebar { width: 350px; padding: 20px; background: white; box-shadow: 2px 0 10px rgba(0,0,0,0.1); overflow-y: auto; }
-        input, button { width: 100%; padding: 12px; margin-top: 10px; border-radius: 8px; border: 1px solid #ddd; }
+        #sidebar { width: 380px; padding: 20px; background: white; box-shadow: 2px 0 10px rgba(0,0,0,0.1); overflow-y: auto; }
+        input, button { width: 100%; padding: 12px; margin-top: 10px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
         button { background: var(--info); color: white; border: none; cursor: pointer; font-weight: bold; }
-        #status { margin-top: 15px; font-size: 0.85rem; color: #555; line-height: 1.6; white-space: pre-wrap; }
+        #status { margin: 15px 0; font-size: 0.85rem; color: #666; padding: 10px; background: #fff; border-radius: 5px; }
+        .trip-card { background: #fff; border: 1px solid #eee; border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 5px solid var(--info); position: relative; }
+        .weather-info { margin-top: 10px; padding: 8px; background: var(--date-bg); border-radius: 5px; font-size: 0.85rem; }
+        .temp-high { color: #d35400; font-weight: bold; }
+        .temp-low { color: #2980b9; font-weight: bold; }
         #map { flex: 1; }
     </style>
 </head>
 <body>
 
-<header>🌍 AI 智慧導航 (自動模型匹配版)</header>
+<header>📅 AI 智慧行程 + 未來 7 天天氣預測</header>
 
 <div class="main">
     <aside id="sidebar">
-        <label>Gemini API Key</label>
+        <label><b>1. API Key</b></label>
         <input type="password" id="api-key" placeholder="貼上 API Key">
-        <label>目的地</label>
-        <input type="text" id="user-prompt" placeholder="例如：台北美食一日遊">
-        <button id="plan-btn" onclick="autoPlan()">✨ 開始規劃</button>
+        <label><b>2. 旅遊需求 (請包含時間)</b></label>
+        <input type="text" id="user-prompt" placeholder="例如：下週五去台南兩天一夜" value="下週三去台中玩">
+        <button onclick="runSmartTrip()">🌍 規劃行程並預測天氣</button>
         <div id="status">準備就緒</div>
-        <div id="itinerary"></div>
+        <div id="itinerary-list"></div>
     </aside>
     <div id="map"></div>
 </div>
@@ -43,74 +47,88 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     let routingControl = null;
 
-    async function autoPlan() {
+    const weatherMap = { 0:"純淨晴天☀️", 1:"晴朗🌤️", 2:"多雲⛅", 3:"陰天☁️", 45:"濃霧🌫️", 61:"小雨🌧️", 95:"雷雨⛈️" };
+
+    // 1. 獲取特定日期的預報
+    async function getForecast(lat, lng, dateStr) {
+        try {
+            // Open-Meteo 獲取未來 7 天預報
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto`;
+            const res = await fetch(url);
+            const data = await res.json();
+            
+            // 尋找匹配日期的索引
+            const idx = data.daily.time.indexOf(dateStr);
+            if (idx === -1) return null;
+
+            return {
+                max: data.daily.temperature_2m_max[idx],
+                min: data.daily.temperature_2m_min[idx],
+                desc: weatherMap[data.daily.weathercode[idx]] || "穩定"
+            };
+        } catch (e) { return null; }
+    }
+
+    async function runSmartTrip() {
         const key = document.getElementById('api-key').value.trim();
         const prompt = document.getElementById('user-prompt').value.trim();
         const status = document.getElementById('status');
-        const btn = document.getElementById('plan-btn');
+        const listContainer = document.getElementById('itinerary-list');
 
-        if (!key || !prompt) return alert("請輸入 Key 與目的地");
-        btn.disabled = true;
-        status.innerHTML = "🔍 正在搜尋您的可用模型...";
+        if (!key || !prompt) return alert("請填寫資料");
+        status.innerHTML = "🧬 AI 正在分析日期並規劃行程...";
+        listContainer.innerHTML = "";
 
         try {
-            // 1. 動態獲取模型清單
-            const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
-            const listData = await listRes.json();
-            if (!listRes.ok) throw new Error(listData.error?.message || "無法獲取模型清單");
-
-            const models = listData.models.map(m => m.name.replace('models/', ''));
+            // 今天的日期 (供 AI 參考)
+            const today = new Date().toISOString().split('T')[0];
             
-            // 2. 依照優先權挑選模型 (優先選 2.0 -> 1.5 -> 最新的)
-            const targetModel = models.find(m => m.includes('2.0-flash')) || 
-                                models.find(m => m.includes('1.5-flash')) || 
-                                models.find(m => m.includes('pro')) || 
-                                models[0];
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+            const sysPrompt = `你是一位導遊。請規劃3個景點。
+            請根據需求判斷日期。今天是 ${today}。
+            嚴格回傳JSON陣列：[{"name":"名稱","date":"YYYY-MM-DD","lat":23.0,"lng":120.0,"desc":"介紹"}]。
+            若沒提日期，預設使用明天。`;
 
-            status.innerHTML = `🚀 已匹配模型: ${targetModel}\n正在生成行程...`;
-
-            // 3. 呼叫 API
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${key}`;
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: `規劃台灣行程：3景點2美食。嚴格回傳JSON陣列：[{"name":"名稱","type":"attraction|food","lat":23.0,"lng":120.0,"desc":"介紹"}]。需求：${prompt}` }] }]
-                })
+                body: JSON.stringify({ contents: [{ parts: [{ text: `${sysPrompt}\n需求：${prompt}` }] }] })
             });
 
             const genData = await res.json();
-            if (!res.ok) throw new Error(genData.error?.message || "生成失敗");
+            const locations = JSON.parse(genData.candidates[0].content.parts[0].text.match(/\[[\s\S]*\]/)[0]);
 
-            const rawText = genData.candidates[0].content.parts[0].text;
-            const locations = JSON.parse(rawText.match(/\[[\s\S]*\]/)[0]);
+            status.innerHTML = "🌡️ 正在抓取預測天氣資料...";
 
-            // 4. 座標校正與渲染
-            status.innerHTML = "✅ AI 生成成功，正在校正座標...";
+            for (let loc of locations) {
+                const weather = await getForecast(loc.lat, loc.lng, loc.date);
+                const card = document.createElement('div');
+                card.className = "trip-card";
+                card.innerHTML = `
+                    <strong>${loc.name}</strong> <small>(${loc.date})</small><br>
+                    <p style="font-size:0.85rem; color:#666; margin:5px 0;">${loc.desc}</p>
+                    <div class="weather-info">
+                        預測天氣：${weather ? `${weather.desc} | <span class="temp-low">${weather.min}°C</span> ~ <span class="temp-high">${weather.max}°C</span>` : '超出 7 天預報範圍'}
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            }
+
             renderRoute(locations);
-            status.innerHTML = `✨ 完成！使用模型: ${targetModel}`;
+            status.innerHTML = `✅ 已完成 ${locations[0].date} 的行程規劃！`;
 
         } catch (e) {
             status.innerHTML = `❌ 錯誤：${e.message}`;
-            console.error(e);
-        } finally {
-            btn.disabled = false;
         }
     }
 
     function renderRoute(locations) {
         if (routingControl) map.removeControl(routingControl);
         const wps = locations.map(l => L.latLng(l.lat, l.lng));
-        
         routingControl = L.Routing.control({
             waypoints: wps,
-            routeWhileDragging: false,
             createMarker: (i, wp) => L.marker(wp.latLng).bindPopup(`<b>${locations[i].name}</b>`)
-        }).on('routingerror', function() {
-            // 如果 OSRM 導航伺服器掛了，改畫直線
-            L.polyline(wps, {color: 'blue', dashArray: '5, 5'}).addTo(map);
         }).addTo(map);
-        
         map.fitBounds(L.latLngBounds(wps), { padding: [50, 50] });
     }
 </script>
