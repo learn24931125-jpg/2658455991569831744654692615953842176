@@ -4,16 +4,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 智慧旅遊行程規畫系統 - 整合版</title>
+    <title>AI 智慧旅遊行程規畫 - 修正版</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700&display=swap');
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; }
-        #map { height: 500px; width: 100%; border-radius: 1rem; z-index: 1; }
+        #map { height: 600px; width: 100%; border-radius: 1rem; z-index: 1; }
         .custom-marker-icon {
-            background-color: #2563eb;
+            background-color: #ef4444; /* 改為紅色更醒目 */
             color: white;
             border-radius: 50%;
             border: 2px solid white;
@@ -21,47 +21,49 @@
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
     <div class="max-w-7xl mx-auto">
-        <header class="text-center mb-8">
-            <h1 class="text-3xl font-extrabold text-blue-900">AI 智慧旅遊行程規畫</h1>
-            <p class="text-gray-500 mt-2">使用 Google Gemini 1.5 Flash 驅動</p>
+        <header class="mb-8 flex justify-between items-end">
+            <div>
+                <h1 class="text-3xl font-extrabold text-gray-900">AI 智慧旅遊行程規畫</h1>
+                <p class="text-gray-500">已切換至 Gemini 1.5 Flash 穩定版端點</p>
+            </div>
+            <div id="apiBadge" class="px-3 py-1 bg-gray-200 text-gray-600 rounded-full text-xs font-bold">API 未連線</div>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div class="lg:col-span-4 space-y-6">
-                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100">
-                    <h2 class="font-bold mb-3 italic">1. 權限設定</h2>
-                    <input type="password" id="apiKey" placeholder="在此輸入 Gemini API Key" 
-                           class="w-full border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
-                    <button onclick="verifyKey()" id="verifyBtn" class="w-full mt-3 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">
-                        驗證並儲存
-                    </button>
-                    <p id="apiStatus" class="text-xs mt-2 text-center text-gray-400">尚未驗證</p>
-                </div>
-
-                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100">
-                    <h2 class="font-bold mb-3 italic">2. 旅程需求</h2>
-                    <input type="text" id="destination" placeholder="例如：台南美食二日遊" 
-                           class="w-full border p-2 rounded focus:outline-none focus:ring-2 focus:ring-green-400">
-                    <button onclick="generatePlan()" id="generateBtn" class="w-full mt-3 bg-green-600 text-white py-2 rounded hover:bg-green-700 transition">
-                        AI 生成路徑
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Google API Key</label>
+                    <input type="password" id="apiKey" placeholder="在此輸入您的 API Key" 
+                           class="w-full border p-2 rounded focus:ring-2 focus:ring-red-400 outline-none">
+                    <button onclick="verifyKey()" id="verifyBtn" class="w-full mt-3 bg-gray-800 text-white py-2 rounded hover:bg-black transition">
+                        驗證金鑰
                     </button>
                 </div>
 
-                <div id="itinerarySection" class="bg-white p-6 rounded-xl shadow-md border border-gray-100 hidden">
-                    <h2 class="font-bold mb-3">📍 規劃路徑</h2>
-                    <div id="itineraryList" class="space-y-3"></div>
+                <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-red-500">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">你想去哪裡？</label>
+                    <input type="text" id="destination" placeholder="例如：台北捷運美食一日遊" 
+                           class="w-full border p-2 rounded outline-none focus:ring-2 focus:ring-red-400">
+                    <button onclick="generatePlan()" id="generateBtn" class="w-full mt-3 bg-red-500 text-white py-2 rounded hover:bg-red-600 transition font-bold">
+                        生成旅遊地圖
+                    </button>
+                </div>
+
+                <div id="itinerarySection" class="bg-white p-6 rounded-xl shadow-md hidden">
+                    <h2 class="font-bold text-lg mb-4 text-gray-800 border-b pb-2">行程詳情</h2>
+                    <div id="itineraryList" class="space-y-4"></div>
                 </div>
             </div>
 
             <div class="lg:col-span-8">
-                <div class="bg-white p-2 rounded-2xl shadow-lg">
+                <div class="bg-white p-2 rounded-2xl shadow-xl border border-gray-100">
                     <div id="map"></div>
                 </div>
             </div>
@@ -69,7 +71,6 @@
     </div>
 
     <script>
-        // 初始化地圖
         const map = L.map('map').setView([23.9739, 120.9796], 7);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap'
@@ -78,29 +79,27 @@
         let markersLayer = L.layerGroup().addTo(map);
         let routeLine = null;
 
-        // 驗證 API Key
         async function verifyKey() {
             const key = document.getElementById('apiKey').value.trim();
-            const status = document.getElementById('apiStatus');
+            const badge = document.getElementById('apiBadge');
             if (!key) return alert("請輸入 Key");
 
             try {
-                // 使用 models 列表 API 測試連線
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+                // 使用穩定版 v1 端點進行測試
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash?key=${key}`);
                 if (res.ok) {
                     localStorage.setItem('gemini_key', key);
-                    status.innerText = "✅ 驗證成功";
-                    status.classList.add('text-green-600');
+                    badge.innerText = "API 已就緒";
+                    badge.className = "px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold";
+                    alert("驗證成功！");
                 } else {
-                    throw new Error("API Key 無效或已過期");
+                    throw new Error("模型未找到或 Key 錯誤");
                 }
             } catch (e) {
-                status.innerText = "❌ " + e.message;
-                status.classList.add('text-red-600');
+                alert("驗證失敗: " + e.message);
             }
         }
 
-        // 生成行程
         async function generatePlan() {
             const key = localStorage.getItem('gemini_key') || document.getElementById('apiKey').value;
             const dest = document.getElementById('destination').value;
@@ -113,13 +112,14 @@
             btn.innerText = "AI 規劃中...";
 
             const prompt = `你是一位台灣旅遊專家。請規劃「${dest}」。
-            要求：1. 嚴格按照地理順序由近到遠排列。
-            2. 僅輸出 JSON 格式，不要 Markdown 代碼塊。
-            格式：[{"name":"地點名稱","lat":緯度,"lng":經度,"desc":"描述"}]`;
+            要求：
+            1. 僅回傳 JSON 格式陣列，不要包含 Markdown 代碼塊標籤或任何解釋文字。
+            2. 格式：[{"name":"地點","lat":緯度,"lng":經度,"desc":"簡短描述"}]
+            3. 景點數量約 3-5 個，按地理推薦順序排列。`;
 
             try {
-                // 修正後的 API 網址：明確指定 gemini-1.5-flash
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+                // 使用 v1 穩定版端點，並確保路徑為 models/gemini-1.5-flash
+                const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${key}`;
                 
                 const response = await fetch(url, {
                     method: 'POST',
@@ -131,37 +131,53 @@
 
                 const data = await response.json();
 
-                // 錯誤攔截器
-                if (!response.ok) throw new Error(data.error?.message || "API 請求失敗");
-                if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
-                    throw new Error("AI 無法生成內容，請更換關鍵字");
+                if (!response.ok) {
+                    // 如果 v1 還是報錯，嘗試 v1beta (部分帳號權限不同)
+                    if (response.status === 404) {
+                        return tryV1Beta(key, prompt, btn);
+                    }
+                    throw new Error(data.error?.message || "請求失敗");
                 }
 
-                let cleanJson = data.candidates[0].content.parts[0].text;
-                // 清除可能存在的 Markdown 代碼塊
-                cleanJson = cleanJson.replace(/```json|```/g, "").trim();
-                
-                const locations = JSON.parse(cleanJson);
-                renderResult(locations);
+                processAIData(data);
 
             } catch (e) {
-                alert("錯誤: " + e.message);
+                alert("系統錯誤: " + e.message);
                 console.error(e);
             } finally {
                 btn.disabled = false;
-                btn.innerText = "AI 生成路徑";
+                btn.innerText = "生成旅遊地圖";
             }
         }
 
-        // 渲染地圖與列表
+        // 備用方案：如果 v1 失敗，嘗試 v1beta
+        async function tryV1Beta(key, prompt, btn) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error("雙端點皆無法找到模型，請檢查 Google AI Studio 中的模型權限。");
+            processAIData(data);
+        }
+
+        function processAIData(data) {
+            let text = data.candidates[0].content.parts[0].text;
+            // 強力清除 Markdown 標籤
+            text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+            const locations = JSON.parse(text);
+            renderResult(locations);
+        }
+
         function renderResult(locations) {
             markersLayer.clearLayers();
             if (routeLine) map.removeLayer(routeLine);
             
             const list = document.getElementById('itineraryList');
-            const section = document.getElementById('itinerarySection');
+            document.getElementById('itinerarySection').classList.remove('hidden');
             list.innerHTML = "";
-            section.classList.remove('hidden');
 
             const coords = [];
             const bounds = L.latLngBounds();
@@ -171,32 +187,31 @@
                 coords.push(pos);
                 bounds.extend(pos);
 
-                // 標記
                 const marker = L.marker(pos, {
                     icon: L.divIcon({
                         className: 'custom-marker-icon',
                         html: i + 1,
-                        iconSize: [24, 24]
+                        iconSize: [26, 26]
                     })
                 }).bindPopup(`<b>${loc.name}</b><br>${loc.desc}`).addTo(markersLayer);
 
-                // 列表
                 const item = document.createElement('div');
-                item.className = "p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-blue-50 transition border border-transparent hover:border-blue-200";
-                item.innerHTML = `<h3 class="font-bold text-sm">${i+1}. ${loc.name}</h3><p class="text-xs text-gray-500">${loc.desc}</p>`;
+                item.className = "p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-red-50 transition border border-gray-100 hover:border-red-200";
+                item.innerHTML = `<h3 class="font-bold text-gray-800">${i+1}. ${loc.name}</h3><p class="text-sm text-gray-500 mt-1">${loc.desc}</p>`;
                 item.onclick = () => { map.flyTo(pos, 15); marker.openPopup(); };
                 list.appendChild(item);
             });
 
-            // 畫線
-            routeLine = L.polyline(coords, { color: '#2563eb', weight: 3, dashArray: '5, 10' }).addTo(map);
-            map.fitBounds(bounds, { padding: [50, 50] });
+            routeLine = L.polyline(coords, { color: '#ef4444', weight: 4, dashArray: '10, 10', opacity: 0.6 }).addTo(map);
+            map.fitBounds(bounds, { padding: [80, 80] });
         }
 
-        // 自動載入 Key
         window.onload = () => {
             const saved = localStorage.getItem('gemini_key');
-            if (saved) document.getElementById('apiKey').value = saved;
+            if (saved) {
+                document.getElementById('apiKey').value = saved;
+                document.getElementById('apiBadge').innerText = "已載入暫存 Key";
+            }
         };
     </script>
 </body>
