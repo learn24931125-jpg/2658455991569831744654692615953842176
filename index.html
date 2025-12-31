@@ -4,93 +4,222 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 台灣智慧旅遊導覽</title>
+    <title>AI 台灣智慧旅遊導覽系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .card-hover:hover { transform: translateY(-5px); transition: all 0.3s ease; }
+        .gradient-bg { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); }
+        .card-hover:hover { transform: translateY(-8px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .loading-spinner { border: 3px solid #f3f3f3; border-top: 3px solid #7c3aed; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="bg-gray-50 font-sans">
+<body class="bg-slate-50 font-sans leading-normal">
 
-    <header class="gradient-bg text-white py-12 px-4 text-center shadow-lg">
-        <h1 class="text-4xl md:text-5xl font-bold mb-4">探索台灣 <span class="text-yellow-400">AI 智慧導覽</span></h1>
-        <p class="text-lg opacity-90">結合大數據與 AI，為您打造專屬的寶島行程</p>
+    <header class="gradient-bg text-white py-16 px-4 text-center">
+        <h1 class="text-4xl md:text-6xl font-extrabold mb-4 tracking-tight">AI 台灣 <span class="text-yellow-300">智慧導覽</span></h1>
+        <p class="text-lg md:text-xl opacity-90 max-w-2xl mx-auto">串聯國家級 TDX 資料庫與 Gemini AI，為您開啟深度的寶島之旅</p>
     </header>
 
     <main class="max-w-6xl mx-auto p-6">
         
-        <section class="bg-white rounded-xl shadow-md p-6 mb-8 -mt-12">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">API 來源設定</label>
-                    <select id="apiSource" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500">
-                        <option value="tdx">交通部 TDX 觀光資料庫</option>
-                        <option value="custom">自定義 AI 推薦引擎</option>
-                    </select>
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">想去哪裡？ (輸入縣市或關鍵字)</label>
+        <section class="bg-white rounded-2xl shadow-xl p-6 mb-12 -mt-10 border border-gray-100">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="md:col-span-3">
+                    <label class="block text-sm font-bold text-gray-700 mb-2 italic">想去哪裡探索？</label>
                     <div class="flex gap-2">
-                        <input type="text" id="searchInput" placeholder="例如：台北 101, 阿里山, 花蓮..." 
-                               class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500">
-                        <button onclick="searchSpots()" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition">
-                            <i class="fas fa-search"></i> 搜尋
+                        <input type="text" id="searchInput" placeholder="輸入關鍵字，如：阿里山、淡水、夜市..." 
+                               class="flex-1 border border-gray-200 rounded-xl px-5 py-3 focus:ring-2 focus:ring-purple-500 outline-none transition">
+                        <button onclick="handleSearch()" class="bg-purple-600 text-white px-8 py-3 rounded-xl hover:bg-purple-700 transition flex items-center shadow-lg shadow-purple-200">
+                            <i class="fas fa-search mr-2"></i> 搜尋景點
                         </button>
                     </div>
                 </div>
-            </div>
-            <div class="mt-4 text-xs text-gray-400">
-                <i class="fas fa-info-circle"></i> 提示：串接 TDX API 需要 Client ID 與 Secret。目前為展示用 Mock Data。
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2 italic">快速設定</label>
+                    <select id="citySelect" class="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-purple-500 outline-none">
+                        <option value="">全台灣</option>
+                        <option value="Taipei">台北市</option>
+                        <option value="NewTaipei">新北市</option>
+                        <option value="Taichung">台中市</option>
+                        <option value="Tainan">台南市</option>
+                        <option value="Kaohsiung">高雄市</option>
+                        <option value="HualienCounty">花蓮縣</option>
+                    </select>
+                </div>
             </div>
         </section>
 
-        <h2 class="text-2xl font-bold text-gray-800 mb-6">推薦熱門景點</h2>
+        <div id="statusMessage" class="mb-6 text-gray-500 font-medium"></div>
         <div id="spotGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div class="animate-pulse bg-gray-200 h-64 rounded-xl"></div>
-            <div class="animate-pulse bg-gray-200 h-64 rounded-xl"></div>
-            <div class="animate-pulse bg-gray-200 h-64 rounded-xl"></div>
+            <div class="bg-gray-200 h-80 rounded-2xl animate-pulse"></div>
+            <div class="bg-gray-200 h-80 rounded-2xl animate-pulse"></div>
+            <div class="bg-gray-200 h-80 rounded-2xl animate-pulse"></div>
         </div>
     </main>
 
+    <div id="aiModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl transition-all">
+            <div class="p-5 border-b flex justify-between items-center bg-gray-50">
+                <h3 class="text-xl font-bold text-purple-800 flex items-center">
+                    <i class="fas fa-robot mr-2"></i> AI 智慧導遊
+                </h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 p-2">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto">
+                <img id="modalImg" src="" class="w-full h-64 object-cover">
+                <div class="p-8">
+                    <span id="modalCity" class="inline-block bg-purple-100 text-purple-700 text-xs px-3 py-1 rounded-full font-bold mb-2"></span>
+                    <h2 id="modalName" class="text-3xl font-black mb-4 text-gray-800"></h2>
+                    
+                    <div class="bg-purple-50 rounded-2xl p-6 border border-purple-100 relative">
+                        <div id="aiLoading" class="hidden absolute top-4 right-4"><div class="loading-spinner"></div></div>
+                        <h4 class="font-bold text-purple-900 mb-3 flex items-center">
+                            <i class="fas fa-magic mr-2"></i> AI 深度解說
+                        </h4>
+                        <div id="aiText" class="text-gray-700 leading-relaxed text-lg italic whitespace-pre-line">
+                            點擊按鈕開啟 AI 深度導覽...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 border-t bg-gray-50 flex gap-3">
+                <button id="aiTriggerBtn" class="flex-1 bg-purple-600 text-white py-4 rounded-2xl font-bold hover:bg-purple-700 shadow-lg shadow-purple-200 transition">
+                    開始 AI 語音導覽生成
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // 模擬的景點數據 (Mock Data)
-        const mockSpots = [
-            { name: "台北 101", city: "台北市", desc: "曾經的世界第一高樓，擁有絕佳的夜景與購物體驗。", img: "https://images.unsplash.com/photo-1552996020-c925d58da1a0?auto=format&fit=crop&w=500" },
-            { name: "日月潭", city: "南投縣", desc: "台灣最大的淡水湖泊，環湖單車道被選為全球最美之一。", img: "https://images.unsplash.com/photo-1571945153237-4929e783ee4a?auto=format&fit=crop&w=500" },
-            { name: "九份老街", city: "新北市", desc: "充滿懷舊氣息的山城，紅燈籠與茶館交織出如動畫般的場景。", img: "https://images.unsplash.com/photo-1505944270255-bd2b68af6422?auto=format&fit=crop&w=500" }
-        ];
+        // --- 設定區 (請在此填入您的金鑰) ---
+        const CONFIG = {
+            TDX_CLIENT_ID: 'YOUR_TDX_CLIENT_ID',
+            TDX_CLIENT_SECRET: 'YOUR_TDX_CLIENT_SECRET',
+            GEMINI_API_KEY: 'YOUR_GEMINI_API_KEY'
+        };
+
+        let currentSpots = [];
+
+        // --- TDX API 服務 ---
+        async function fetchTdxToken() {
+            const params = new URLSearchParams({
+                grant_type: 'client_credentials',
+                client_id: CONFIG.TDX_CLIENT_ID,
+                client_secret: CONFIG.TDX_CLIENT_SECRET
+            });
+            const res = await fetch("https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params
+            });
+            return (await res.json()).access_token;
+        }
+
+        async function getSpots(city = '', keyword = '') {
+            try {
+                const token = await fetchTdxToken();
+                let url = `https://tdx.transportdata.tw/api/basic/v2/Tourism/ScenicSpot${city ? '/' + city : ''}?$top=12&$format=JSON`;
+                if (keyword) url += `&$filter=contains(ScenicSpotName, '${keyword}')`;
+
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                return await res.json();
+            } catch (e) {
+                console.error("TDX Error", e);
+                return [];
+            }
+        }
+
+        // --- Gemini AI 服務 ---
+        async function askGemini(spotName, city) {
+            const prompt = `你是一位專業的台灣導遊。請針對「${city}的${spotName}」提供約 150 字的導覽。包含歷史背景、一個有趣的冷知識及最佳拍照建議。語氣要生動有趣。`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${CONFIG.GEMINI_API_KEY}`;
+            
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+            const data = await res.json();
+            return data.candidates[0].content.parts[0].text;
+        }
+
+        // --- UI 控制 ---
+        async function handleSearch() {
+            const city = document.getElementById('citySelect').value;
+            const keyword = document.getElementById('searchInput').value;
+            const grid = document.getElementById('spotGrid');
+            
+            grid.innerHTML = '<div class="col-span-full text-center py-20"><div class="loading-spinner mx-auto mb-4"></div>連結大數據庫中...</div>';
+            
+            const data = await getSpots(city, keyword);
+            currentSpots = data;
+            renderSpots(data);
+        }
 
         function renderSpots(spots) {
             const grid = document.getElementById('spotGrid');
-            grid.innerHTML = spots.map(spot => `
-                <div class="bg-white rounded-xl overflow-hidden shadow-lg card-hover">
-                    <img src="${spot.img}" alt="${spot.name}" class="w-full h-48 object-cover">
-                    <div class="p-5">
-                        <div class="flex justify-between items-start mb-2">
-                            <h3 class="text-xl font-bold text-gray-800">${spot.name}</h3>
-                            <span class="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded">${spot.city}</span>
-                        </div>
-                        <p class="text-gray-600 text-sm mb-4 leading-relaxed">${spot.desc}</p>
-                        <button class="w-full border border-purple-600 text-purple-600 py-2 rounded-lg hover:bg-purple-50 transition font-medium">
-                            查看 AI 導覽詳情
+            if (!spots.length) {
+                grid.innerHTML = '<p class="col-span-full text-center py-20 text-gray-400">找不到相關景點，換個關鍵字試試？</p>';
+                return;
+            }
+            grid.innerHTML = spots.map((spot, idx) => `
+                <div class="bg-white rounded-2xl overflow-hidden shadow-md card-hover border border-gray-100">
+                    <img src="${spot.Picture?.PictureUrl1 || 'https://images.unsplash.com/photo-1505944270255-bd2b68af6422?w=500'}" class="w-full h-48 object-cover">
+                    <div class="p-6">
+                        <span class="text-xs font-bold text-purple-600 uppercase tracking-widest">${spot.City || '台灣'}</span>
+                        <h3 class="text-xl font-bold text-gray-800 mt-1 mb-3">${spot.ScenicSpotName}</h3>
+                        <p class="text-gray-500 text-sm line-clamp-3 mb-5">${spot.DescriptionDetail || '點擊下方按鈕了解更多深度資訊。'}</p>
+                        <button onclick="openModal(${idx})" class="w-full bg-slate-800 text-white py-3 rounded-xl font-medium hover:bg-black transition">
+                            進入智慧導覽
                         </button>
                     </div>
                 </div>
             `).join('');
         }
 
-        function searchSpots() {
-            const query = document.getElementById('searchInput').value;
-            // 這裡未來可以介接真正的 API
-            alert('系統正在為您分析「' + query + '」的相關景點...');
+        function openModal(idx) {
+            const spot = currentSpots[idx];
+            document.getElementById('modalName').innerText = spot.ScenicSpotName;
+            document.getElementById('modalCity').innerText = spot.City || '景點資訊';
+            document.getElementById('modalImg').src = spot.Picture?.PictureUrl1 || 'https://images.unsplash.com/photo-1505944270255-bd2b68af6422?w=500';
+            document.getElementById('aiText').innerText = "準備好聽故事了嗎？點擊下方按鈕啟動 AI。";
+            
+            const btn = document.getElementById('aiTriggerBtn');
+            btn.onclick = async () => {
+                document.getElementById('aiLoading').classList.remove('hidden');
+                document.getElementById('aiText').innerText = "AI 導遊正在翻閱文獻中...";
+                const aiResponse = await askGemini(spot.ScenicSpotName, spot.City);
+                document.getElementById('aiLoading').classList.add('hidden');
+                typeWriter(aiResponse);
+            };
+
+            document.getElementById('aiModal').classList.remove('hidden');
         }
 
-        // 初始化頁面
-        window.onload = () => {
-            setTimeout(() => renderSpots(mockSpots), 800); // 模擬載入延遲
-        };
+        function typeWriter(text) {
+            const el = document.getElementById('aiText');
+            el.innerText = "";
+            let i = 0;
+            const timer = setInterval(() => {
+                el.innerText += text[i];
+                i++;
+                if (i >= text.length) clearInterval(timer);
+            }, 30);
+        }
+
+        function closeModal() {
+            document.getElementById('aiModal').classList.add('hidden');
+        }
+
+        // 初始載入
+        window.onload = handleSearch;
     </script>
 </body>
 </html>
