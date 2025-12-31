@@ -59,11 +59,28 @@
     let polyline = null;
 
     // 2. 定義生成行程的 async 函數
-   async function generateTrip() {
-    // 現在這裡可以安全使用 await
-    const response = await fetch(url); 
-    const data = await response.json();
+   // 宣告時務必包含 async
+async function generateTrip() {
+    try {
+        const key = document.getElementById('apiKey').value;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+
+        // 這裡的 await 才能正常運作
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: "你好" }] }] })
+        });
+
+        const data = await response.json();
+        console.log(data);
+    } catch (e) {
+        console.error("執行出錯:", e);
+    }
 }
+
+// 建議：使用這種方式綁定按鈕，避免 HTML onclick 找不到函數
+document.getElementById('btn').addEventListener('click', generateTrip);
     btn.disabled = true;
     btn.innerText = "正在連線...";
 
