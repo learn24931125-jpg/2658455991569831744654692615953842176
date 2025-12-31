@@ -1,171 +1,298 @@
 <H1>智慧旅遊導覽</H1>
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>AI 台灣旅遊導航 - 最終穩定版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 台灣智慧旅遊行程規畫系統</title>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    
     <style>
-        :root { --primary: #2c3e50; --info: #3498db; --danger: #e74c3c; --success: #27ae60; --warning: #f39c12; }
-        body { font-family: "Microsoft JhengHei", sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background: #f4f7f6; }
-        header { background: var(--primary); color: white; padding: 15px; text-align: center; }
-        .layout { display: flex; flex: 1; overflow: hidden; }
-        #sidebar { width: 350px; background: white; padding: 20px; box-shadow: 2px 0 10px rgba(0,0,0,0.1); overflow-y: auto; display: flex; flex-direction: column; }
-        .input-group { margin-bottom: 15px; }
-        input, button { width: 100%; padding: 12px; margin-top: 8px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
-        .btn-plan { background: var(--info); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .btn-clear { background: #fff; color: var(--danger); border: 1px solid var(--danger); margin-top: 10px; cursor: pointer; }
-        button:disabled { background: #ccc !important; cursor: not-allowed; }
-        #status { margin-top: 15px; padding: 12px; border-radius: 8px; font-size: 0.9rem; background: #f8f9fa; border: 1px solid #eee; min-height: 60px; }
-        #itinerary { margin-top: 20px; }
-        #map { flex: 1; }
+        :root {
+            --primary: #2c3e50;
+            --accent: #27ae60;
+            --sidebar-width: 350px;
+        }
+
+        body {
+            font-family: "Microsoft JhengHei", system-ui, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: #f8f9fa;
+        }
+
+        /* 標題區 */
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* 側邊欄：設定與 API 區 */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: white;
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .section-title {
+            font-weight: bold;
+            color: var(--primary);
+            border-left: 4px solid var(--accent);
+            padding-left: 10px;
+            margin-bottom: 10px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label { font-size: 0.9rem; font-weight: 600; }
+
+        input, select, textarea {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover { background: #219150; }
+
+        /* 地圖展示區 */
+        #map-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        #map { height: 100%; width: 100%; }
+
+        /* 狀態標籤 */
+        .status-bar {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 15px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border: 1px solid #ddd;
+        }
+
+        /* 行程結果卡片 */
+        #itinerary-result {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .day-block {
+            background: #f1f8f4;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
 
-<header>🗺️ AI 智慧行程導航 (穩定運行版)</header>
+<header>
+    <h1>🇹🇼 AI 台灣智慧旅遊行程規畫</h1>
+</header>
 
-<div class="layout">
-    <aside id="sidebar">
+<div class="main-container">
+    <aside class="sidebar">
         <div class="input-group">
-            <label><b>1. Gemini API Key</b></label>
-            <input type="password" id="api-key" placeholder="貼上 API Key...">
+            <div class="section-title">API 驗證</div>
+            <label for="api-key">Gemini API Key</label>
+            <input type="password" id="api-key" placeholder="在此貼上您的 API 金鑰">
         </div>
+
         <div class="input-group">
-            <label><b>2. 目的地</b></label>
-            <input type="text" id="user-prompt" placeholder="例如：台南美食之旅">
+            <div class="section-title">行程設定</div>
+            <label for="destination">目的地</label>
+            <select id="destination">
+                <option value="[25.0330, 121.5654]">台北市</option>
+                <option value="[24.1477, 120.6736]">台中市</option>
+                <option value="[22.9997, 120.2270]">台南市</option>
+                <option value="[22.6273, 120.3014]">高雄市</option>
+                <option value="[23.9771, 121.6044]">花蓮縣</option>
+            </select>
         </div>
-        
-        <button class="btn-plan" id="plan-btn" onclick="startApp()">✨ 開始規劃行程</button>
-        <button class="btn-clear" id="clear-btn" onclick="clearCache()">🧹 清除快取</button>
-        
-        <div id="status">準備就緒。</div>
-        <div id="itinerary"></div>
+
+        <div class="input-group">
+            <label for="days">旅遊天數</label>
+            <input type="number" id="days" value="2" min="1" max="5">
+        </div>
+
+        <div class="input-group">
+            <label for="style">旅遊風格</label>
+            <select id="style">
+                <option value="美食與在地小吃">美食吃貨</option>
+                <option value="自然與登山健行">自然山海</option>
+                <option value="歷史建築與文青街區">文青古蹟</option>
+            </select>
+        </div>
+
+        <button onclick="startPlanning()">開始 AI 智慧規劃</button>
+
+        <div id="itinerary-result"></div>
     </aside>
-    <div id="map"></div>
+
+    <main id="map-wrapper">
+        <div id="map"></div>
+        <div class="status-bar" id="status-text">系統狀態：準備就緒</div>
+    </main>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
 
 <script>
-    const map = L.map('map').setView([23.6, 121.0], 7);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    let routingControl = null;
+    // 1. 初始化地圖
+    const map = L.map('map').setView([25.0330, 121.5654], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
 
-    function updateStatus(msg, color = "#2c3e50") {
-        const s = document.getElementById('status');
-        s.style.color = color;
-        s.innerHTML = msg;
-    }
+    const routeLayer = L.featureGroup().addTo(map);
 
-    function clearCache() {
-        if (confirm("確定要清除快取嗎？")) {
-            Object.keys(localStorage).forEach(k => k.startsWith('trip_') && localStorage.removeItem(k));
-            document.getElementById('itinerary').innerHTML = "";
-            if (routingControl) map.removeControl(routingControl);
-            updateStatus("✅ 快取已清空", "#27ae60");
-        }
-    }
-
-    async function getGPS(name) {
-        try {
-            const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(name)}&format=json&limit=1`);
-            const d = await r.json();
-            return d[0] ? { lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon) } : null;
-        } catch { return null; }
-    }
-
-    async function startApp() {
-        const key = document.getElementById('api-key').value.trim();
-        const prompt = document.getElementById('user-prompt').value.trim();
-        const btn = document.getElementById('plan-btn');
+    // 2. 主程式邏輯
+    async function startPlanning() {
+        const apiKey = document.getElementById('api-key').value.trim();
+        const status = document.getElementById('status-text');
         
-        if (!key || !prompt) return alert("請填寫資料");
-
-        const cacheKey = `trip_${prompt}`;
-        const cachedData = localStorage.getItem(cacheKey);
-        
-        if (cachedData) {
-            updateStatus("📌 從快取載入成功 (不消耗配額)", "#27ae60");
-            renderAll(JSON.parse(cachedData));
+        if (!apiKey) {
+            alert("請輸入有效的 Gemini API Key");
             return;
         }
 
-        btn.disabled = true;
-        updateStatus("🧬 AI 正在規劃中...");
+        status.innerText = "⏳ 正在驗證 Key 並規劃行程...";
+        status.style.color = "#d68910";
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
-        
         try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: `規劃台灣行程：3景點2美食。嚴格回傳JSON：[{"name":"名稱","type":"attraction|food","lat":23.0,"lng":120.0,"desc":"介紹"}]。需求：${prompt}` }] }]
-                })
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) throw new Error(data.error?.message || "請求失敗");
-            if (!data.candidates) throw new Error("AI 內容被攔截");
-
-            const rawText = data.candidates[0].content.parts[0].text;
-            const locations = JSON.parse(rawText.match(/\[[\s\S]*\]/)[0]);
-
-            updateStatus("🔍 正在校正 GPS...");
-            const corrected = await Promise.all(locations.map(async loc => {
-                const p = await getGPS(loc.name);
-                return p ? { ...loc, lat: p.lat, lng: p.lng } : loc;
-            }));
-
-            localStorage.setItem(cacheKey, JSON.stringify(corrected));
-            renderAll(corrected);
-            updateStatus("✅ 成功生成新行程！", "#27ae60");
-            btn.disabled = false;
-
-        } catch (e) {
-            if (e.message.includes("quota")) {
-                let count = 30;
-                const timer = setInterval(() => {
-                    updateStatus(`⚠️ 配額用盡！請等待 ${count} 秒後重試...`, "#e67e22");
-                    btn.innerHTML = `冷卻中 (${count}s)`;
-                    count--;
-                    if (count < 0) {
-                        clearInterval(timer);
-                        btn.disabled = false;
-                        btn.innerHTML = "✨ 開始規劃行程";
-                        updateStatus("✅ 冷卻結束，可以重新點擊。");
-                    }
-                }, 1000);
-            } else {
-                updateStatus(`❌ 錯誤：${e.message}`, "#e74c3c");
-                btn.disabled = false;
-            }
+            const planData = await fetchGeminiAI(apiKey);
+            renderRoute(planData);
+            status.innerText = "✅ 行程規劃完成！";
+            status.style.color = "green";
+        } catch (error) {
+            console.error(error);
+            status.innerText = "❌ 發生錯誤，請檢查 Key 或網路";
+            status.style.color = "red";
+            alert("錯誤: " + error.message);
         }
     }
 
-    function renderAll(locations) {
-        if (routingControl) map.removeControl(routingControl);
-        const wps = locations.map(l => L.latLng(l.lat, l.lng));
-        
-        // 修正語言報錯：移除 language: 'zh'，改用預設
-        routingControl = L.Routing.control({
-            waypoints: wps,
-            routeWhileDragging: false,
-            createMarker: (i, wp) => L.marker(wp.latLng).bindPopup(`<b>${locations[i].name}</b>`)
-        }).addTo(map);
-        
-        map.fitBounds(L.latLngBounds(wps), { padding: [50, 50] });
+    // 3. 串接 Gemini API
+    async function fetchGeminiAI(apiKey) {
+        const destName = document.getElementById('destination').selectedOptions[0].text;
+        const days = document.getElementById('days').value;
+        const style = document.getElementById('style').value;
 
-        document.getElementById('itinerary').innerHTML = "<h4>📋 路線明細：</h4>" + locations.map(l => 
-            `<div style="margin-bottom:10px; padding:10px; border-left:4px solid #3498db; background:#fff;">
-                <strong>${l.name}</strong><br><small>${l.desc}</small>
-            </div>`
-        ).join('');
+        const prompt = `你是一位專業的台灣旅遊規劃師。請規劃 ${destName} 的 ${days} 天旅遊行程，風格為 ${style}。
+        請回傳 JSON 格式陣列，不要有任何 Markdown 標籤或其他說明文字。
+        格式：[{"day": 1, "order": 1, "name": "景點", "lat": 25.1, "lng": 121.5, "desc": "描述"}]
+        請確保緯度(lat)與經度(lng)是精確的數字。`;
+
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }]
+            })
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error.message);
+
+        const rawText = data.candidates[0].content.parts[0].text;
+        const cleanJson = rawText.replace(/```json|```/g, "").trim();
+        return JSON.parse(cleanJson);
+    }
+
+    // 4. 地圖渲染與連線
+    function renderRoute(spots) {
+        routeLayer.clearLayers();
+        const resultDiv = document.getElementById('itinerary-result');
+        resultDiv.innerHTML = "<h3>📅 AI 推薦行程</h3>";
+
+        const colors = ['#3498db', '#e74c3c', '#2ecc71', '#f1c40f', '#9b59b6'];
+        const daysMap = {};
+
+        // 分類天數
+        spots.forEach(s => {
+            if (!daysMap[s.day]) daysMap[s.day] = [];
+            daysMap[s.day].push(s);
+        });
+
+        Object.keys(daysMap).forEach((day, index) => {
+            const daySpots = daysMap[day].sort((a, b) => a.order - b.order);
+            const color = colors[index % colors.length];
+            const polylineCoords = [];
+
+            const dayEl = document.createElement('div');
+            dayEl.className = 'day-block';
+            dayEl.innerHTML = `<strong style="color:${color}">第 ${day} 天</strong><br>`;
+
+            daySpots.forEach(spot => {
+                polylineCoords.push([spot.lat, spot.lng]);
+                
+                // 地圖標記
+                L.marker([spot.lat, spot.lng])
+                    .bindPopup(`<b>D${day}-${spot.order}: ${spot.name}</b><br>${spot.desc}`)
+                    .addTo(routeLayer);
+                
+                dayEl.innerHTML += `${spot.order}. ${spot.name}<br>`;
+            });
+
+            // 畫出連線
+            L.polyline(polylineCoords, {
+                color: color,
+                weight: 4,
+                opacity: 0.6,
+                dashArray: '8, 8'
+            }).addTo(routeLayer);
+
+            resultDiv.appendChild(dayEl);
+        });
+
+        // 調整視野
+        map.fitBounds(routeLayer.getBounds().pad(0.1));
     }
 </script>
+
 </body>
 </html>
